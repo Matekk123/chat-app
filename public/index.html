@@ -3,112 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BalassaMessenger - Full Fix</title>
+    <title>BalassaMessenger Ultimate</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
-        
-        /* Oldalsáv */
-        #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
-        .profile-card { padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: relative; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; transition: 0.3s; }
-        .avatar:hover { opacity: 0.8; }
-        
-        #chat-list { flex: 1; overflow-y: auto; }
-        .item { padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f0f0f0; }
-        .item:hover { background: #f9f9f9; }
-        .mini-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+        :root { --bg: #f0f2f5; --panel: white; --text: black; --primary: #0084ff; --msg-in: white; }
+        .dark-mode { --bg: #18191a; --panel: #242526; --text: #e4e6eb; --primary: #2d88ff; --msg-in: #3a3b3c; }
 
-        /* Kereső Modal */
-        #search-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 10000; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 380px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        #search-results { flex: 1; overflow-y: auto; margin-top: 10px; }
-        .search-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-
-        /* Chat terület */
-        #main-chat { flex: 1; display: flex; flex-direction: column; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; background: #f0f2f5; display: flex; flex-direction: column; gap: 8px; }
-        .msg { max-width: 70%; padding: 10px 14px; border-radius: 18px; font-size: 14px; position: relative; display: flex; flex-direction: column; }
-        .sent { align-self: flex-end; background: #0084ff; color: white; cursor: pointer; }
-        .received { align-self: flex-start; background: white; color: black; border: 1px solid #ddd; }
-        .time { font-size: 10px; align-self: flex-end; opacity: 0.6; margin-top: 4px; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.3s; }
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text); overflow: hidden; }
         
-        .btn { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        .blue { background: #0084ff; }
-        .green { background: #2ecc71; }
-        .red { background: #e74c3c; }
-        .btn:active { transform: scale(0.95); }
-
-        input { width: 100%; padding: 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; margin-bottom: 10px; }
+        #sidebar { width: 350px; background: var(--panel); border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        #main-chat { flex: 1; display: flex; flex-direction: column; position: relative; }
         
-        #login-screen { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; visibility: hidden; }
-        #login-screen.active { visibility: visible; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #ccc; }
+        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; margin-right: 8px; }
+
+        /* Kereső és Lista */
+        .search-box { padding: 10px; border-bottom: 1px solid #ddd; }
+        .chat-item { padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eee; }
+        .chat-item:hover { background: rgba(0,0,0,0.05); }
+
+        /* Üzenetek */
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 70%; display: flex; align-items: flex-end; }
+        .msg-content { padding: 10px 15px; border-radius: 18px; position: relative; font-size: 14px; }
+        .sent { align-self: flex-end; flex-direction: row-reverse; }
+        .sent .msg-content { background: var(--primary); color: white; margin-left: 8px; }
+        .received .msg-content { background: var(--msg-in); color: var(--text); border: 1px solid #ddd; }
+        .msg-info { font-size: 10px; opacity: 0.7; margin-top: 4px; display: block; text-align: right; }
+
+        /* Modálok */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: var(--panel); padding: 20px; border-radius: 15px; width: 400px; max-height: 80vh; overflow-y: auto; }
+        
+        .btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .blue { background: var(--primary); color: white; }
+        .red { background: #e74c3c; color: white; }
+        
+        #call-overlay { position: absolute; top: 20px; right: 20px; background: #2ecc71; color: white; padding: 15px; border-radius: 10px; display: none; }
+        
+        input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin: 5px 0; background: var(--panel); color: var(--text); }
+        
+        #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div id="search-modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">Ismerős keresése</h3>
-            <input type="text" id="user-search-input" placeholder="Kezdd el írni a nevet..." oninput="searchUsers()">
-            <div id="search-results"></div>
-            <button class="btn red" onclick="toggleSearch(false)" style="margin-top:10px;">Bezárás</button>
-        </div>
-    </div>
-
-    <div id="login-screen" class="active">
-        <div style="width: 300px; text-align: center;">
-            <h1 style="color: #0084ff; margin-bottom:20px;">BalassaMessenger</h1>
-            <input type="email" id="email" placeholder="E-mail cím">
-            <input type="password" id="password" placeholder="Jelszó">
-            <button onclick="login()" class="btn blue" style="width:100%; padding:12px;">Belépés</button>
-            <hr style="margin:20px 0;">
-            <input type="text" id="reg-name" placeholder="Teljes neved">
-            <button onclick="register()" class="btn green" style="width:100%; padding:12px;">Regisztráció</button>
+    <div id="login-screen">
+        <div class="modal-content" style="text-align: center;">
+            <h1 style="color: var(--primary);">BalassaMessenger</h1>
+            <input type="email" id="l-email" placeholder="Email">
+            <input type="password" id="l-pass" placeholder="Jelszó">
+            <button class="btn blue" style="width:100%" onclick="authAction('login')">Belépés</button>
+            <hr>
+            <input type="text" id="r-name" placeholder="Teljes név">
+            <button class="btn" style="width:100%; background:#2ecc71; color:white;" onclick="authAction('reg')">Regisztráció</button>
         </div>
     </div>
 
     <div id="sidebar">
-        <div class="profile-card">
-            <label title="Profilkép módosítása">
-                <img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-                <input type="file" id="p-upload" hidden accept="image/*">
-            </label>
-            <h4 id="my-display-name" style="margin:10px 0 5px 0;">...</h4>
-            <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer; font-size:12px;">Kijelentkezés</button>
+        <div style="padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+            <img id="my-p-img" class="avatar" src="" onclick="openSettings()">
+            <h3 id="my-name">...</h3>
+            <button onclick="openSettings()" style="background:none; border:none; font-size:20px; cursor:pointer;">⚙️</button>
         </div>
         
-        <div id="request-panel" style="background:#e7f3ff; padding:10px; display:none; border-bottom:1px solid #0084ff;">
-            <strong style="font-size:12px;">Függőben lévő kérelmek:</strong>
+        <div class="search-box">
+            <button class="btn blue" style="width:100%" onclick="openSearch()">🔍 Ismerős keresése</button>
+        </div>
+
+        <div id="req-panel" style="display:none; padding:10px; background:rgba(0,132,255,0.1);">
+            <strong>Kérelmek:</strong>
             <div id="req-list"></div>
         </div>
 
-        <div id="chat-list"></div>
+        <div id="chat-list" style="flex:1; overflow-y:auto;"></div>
         
-        <div style="padding: 15px; display: flex; gap: 8px;">
-            <button onclick="toggleSearch(true)" class="btn blue" style="flex:1">🔍 Keresés</button>
-            <button onclick="createGroup()" class="btn green" style="flex:1">+ Csoport</button>
+        <div style="padding:10px;">
+            <button class="btn" style="width:100%; background:#2ecc71; color:white;" onclick="openGroupCreate()">+ Új csoport létrehozása</button>
         </div>
     </div>
 
     <div id="main-chat">
-        <div id="chat-header" style="padding:15px; border-bottom:1px solid #ddd; font-weight:bold; background:white; display:flex; justify-content:space-between; align-items:center;">
-            <span id="chat-title">Válassz egy beszélgetést</span>
-            <div id="group-ops" style="display:none;">
-                <button onclick="inviteToGroup()" class="btn blue" style="padding:5px 10px; font-size:11px;">+ Tag</button>
+        <div id="call-overlay">Hívás folyamatban... <button onclick="endCall()" class="btn red">Vége</button></div>
+        
+        <div style="padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; background: var(--panel);">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img id="chat-avatar" class="avatar" style="display:none;">
+                <span id="chat-title" style="font-weight:bold;">Válassz egy beszélgetést</span>
+            </div>
+            <div id="chat-actions" style="display:none;">
+                <button onclick="startCall('audio')" style="background:none; border:none; cursor:pointer; font-size:18px;">📞</button>
+                <button onclick="startCall('video')" style="background:none; border:none; cursor:pointer; font-size:18px;">🎥</button>
+                <button id="add-member-btn" onclick="openAddMember()" style="display:none; background:none; border:none; cursor:pointer;">➕👤</button>
             </div>
         </div>
+
         <div id="messages"></div>
-        <div style="padding:15px; display:flex; gap:10px; background:white; border-top:1px solid #ddd;">
-            <label style="cursor:pointer; font-size:20px;">📎<input type="file" id="f-upload" hidden accept="image/*"></label>
-            <input type="text" id="m-input" placeholder="Írj egy üzenetet..." onkeypress="if(event.key==='Enter') sendMsg()">
-            <button onclick="sendMsg()" class="btn blue">KÜLDÉS</button>
+
+        <div style="padding:15px; background:var(--panel); border-top:1px solid #ddd; display:flex; gap:10px; align-items:center;">
+            <label style="cursor:pointer; font-size:20px;">📎<input type="file" id="file-input" hidden onchange="sendFile()"></label>
+            <input type="text" id="m-input" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg()">
+            <button onclick="sendMsg()" class="btn blue">Küldés</button>
+        </div>
+    </div>
+
+    <div id="search-modal" class="modal">
+        <div class="modal-content">
+            <h3>Keresés név alapján</h3>
+            <input type="text" id="search-in" placeholder="Név..." oninput="searchUsers()">
+            <div id="search-res"></div>
+            <button class="btn red" style="width:100%; margin-top:10px;" onclick="closeModals()">Bezárás</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>Beállítások</h3>
+            <label>Profilkép módosítása:</label>
+            <input type="file" accept="image/*" onchange="updateProfilePic(this)">
+            <button class="btn blue" style="width:100%; margin: 10px 0;" onclick="toggleDarkMode()">Sötét/Világos mód</button>
+            <hr>
+            <input type="password" id="new-pass" placeholder="Új jelszó">
+            <button class="btn" onclick="updatePass()">Jelszó frissítése</button>
+            <button class="btn red" style="width:100%; margin-top:20px;" onclick="signOutUser()">Kijelentkezés</button>
+            <button class="btn" style="width:100%; margin-top:5px;" onclick="closeModals()">Bezárás</button>
+        </div>
+    </div>
+
+    <div id="group-modal" class="modal">
+        <div class="modal-content">
+            <h3>Tagok kiválasztása</h3>
+            <input type="text" id="group-name" placeholder="Csoport neve">
+            <div id="friend-select-list"></div>
+            <button class="btn blue" style="width:100%; margin-top:10px;" onclick="createGroup()">Létrehozás</button>
+            <button class="btn red" style="width:100%; margin-top:5px;" onclick="closeModals()">Mégse</button>
         </div>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy, arrayUnion, arrayRemove, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -124,125 +158,163 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currUser = null, activeChat = null;
+    let currUser = null, activeChat = null, isGroup = false;
 
-    onAuthStateChanged(auth, u => {
-        if(u) { currUser = u; document.getElementById('login-screen').classList.remove('active'); initApp(); }
-        else { document.getElementById('login-screen').classList.add('active'); }
+    // --- AUTH ---
+    onAuthStateChanged(auth, async u => {
+        if(u) {
+            currUser = u;
+            document.getElementById('login-screen').style.display = 'none';
+            initData();
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+        }
     });
 
-    function initApp() {
-        document.getElementById('my-display-name').innerText = currUser.displayName;
+    window.authAction = async (type) => {
+        const e = document.getElementById(type==='login'?'l-email':'l-email').value;
+        const p = document.getElementById(type==='login'?'l-pass':'l-pass').value;
+        if(type==='reg') {
+            const n = document.getElementById('r-name').value;
+            const res = await createUserWithEmailAndPassword(auth, e, p);
+            await updateProfile(res.user, { displayName: n });
+            await setDoc(doc(db, "users", e), { name: n, email: e, friends: [], groups: [], requests: [], photo: "" });
+        } else {
+            await signInWithEmailAndPassword(auth, e, p);
+        }
+        location.reload();
+    };
+
+    // --- KEZDŐADATOK ÉS FRISSÍTÉS ---
+    function initData() {
         onSnapshot(doc(db, "users", currUser.email), s => {
-            const data = s.data() || {};
-            if(data.photoURL) document.getElementById('my-avatar').src = data.photoURL;
-
-            const list = document.getElementById('chat-list'); list.innerHTML = "";
-            (data.friends || []).forEach(f => {
-                const d = document.createElement('div'); d.className="item";
-                d.innerHTML=`<img src="${f.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="mini-avatar"> <span>${f.name}</span>`;
-                d.onclick=()=>openChat(f.email, f.name, false); list.appendChild(d);
+            const d = s.data();
+            document.getElementById('my-name').innerText = d.name;
+            document.getElementById('my-p-img').src = d.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            
+            // Chat lista frissítés (Barátok + Csoportok)
+            const list = document.getElementById('chat-list');
+            list.innerHTML = "";
+            d.friends.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'chat-item';
+                item.innerHTML = `<img src="${f.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar"> <div><b>${f.name}</b></div>`;
+                item.onclick = () => openChat(f.email, f.name, f.photo, false);
+                list.appendChild(item);
             });
-            (data.groups || []).forEach(g => {
-                const d = document.createElement('div'); d.className="item";
-                d.innerHTML=`<div class="mini-avatar" style="background:#ddd; display:flex; align-items:center; justify-content:center;">👥</div> <span>${g.name}</span>`;
-                d.onclick=()=>openChat(g.id, g.name, true); list.appendChild(d);
+            d.groups.forEach(g => {
+                const item = document.createElement('div');
+                item.className = 'chat-item';
+                item.innerHTML = `<div class="avatar" style="background:#0084ff; display:flex; align-items:center; justify-content:center; color:white;">G</div> <div><b>${g.name}</b></div>`;
+                item.onclick = () => openChat(g.id, g.name, null, true);
+                list.appendChild(item);
             });
 
-            const reqBox = document.getElementById('request-panel');
-            const reqs = data.incomingRequests || [];
-            if(reqs.length > 0) {
-                reqBox.style.display = "block";
-                document.getElementById('req-list').innerHTML = reqs.map(r => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:13px;">
-                        <span>${r.name}</span>
-                        <button onclick="handleReq('${r.email}','${r.name}','${r.photoURL}',true)" class="btn green" style="padding:3px 8px;">Elfogad</button>
-                    </div>`).join('');
-            } else { reqBox.style.display = "none"; }
+            // Kérelmek
+            const rPanel = document.getElementById('req-panel');
+            if(d.requests && d.requests.length > 0) {
+                rPanel.style.display = 'block';
+                document.getElementById('req-list').innerHTML = d.requests.map(r => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                        <img src="${r.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" style="width:25px; height:25px; border-radius:50%;">
+                        <span style="font-size:12px;">${r.name}</span>
+                        <div>
+                            <button class="btn blue" style="padding:2px 5px;" onclick="handleFriend('${r.email}','${r.name}','${r.photo}', true)">✔</button>
+                            <button class="btn red" style="padding:2px 5px;" onclick="handleFriend('${r.email}','${r.name}','${r.photo}', false)">✖</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else { rPanel.style.display = 'none'; }
         });
     }
 
-    // --- PROFILKÉP FELTÖLTÉS ---
-    document.getElementById('p-upload').onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const base64 = reader.result;
-            await updateDoc(doc(db, "users", currUser.email), { photoURL: base64 });
-            document.getElementById('my-avatar').src = base64;
-        };
-    };
-
-    // --- KERESÉS PROFILKÉPPEL ---
-    window.toggleSearch = (show) => {
-        document.getElementById('search-modal').style.display = show ? 'flex' : 'none';
-        if(!show) document.getElementById('search-results').innerHTML = "";
-    };
-
+    // --- KERESÉS ÉS BARÁTOK ---
+    window.openSearch = () => { document.getElementById('search-modal').style.display = 'flex'; };
     window.searchUsers = async () => {
-        const val = document.getElementById('user-search-input').value.trim();
-        const resultsBox = document.getElementById('search-results');
-        if(val.length < 2) { resultsBox.innerHTML = ""; return; }
-
+        const val = document.getElementById('search-in').value.trim();
+        if(val.length < 2) return;
         const q = query(collection(db, "users"), where("name", ">=", val), where("name", "<=", val + '\uf8ff'));
         const snap = await getDocs(q);
-        resultsBox.innerHTML = "";
-        
+        document.getElementById('search-res').innerHTML = "";
         snap.forEach(d => {
-            const u = d.data();
             if(d.id === currUser.email) return;
+            const u = d.data();
             const div = document.createElement('div');
-            div.className = "search-item";
-            div.innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="${u.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="mini-avatar">
-                    <span>${u.name}</span>
-                </div>
-                <button onclick="sendRequest('${d.id}', '${u.name}', '${u.photoURL || ''}')" class="btn blue">Jelölés</button>`;
-            resultsBox.appendChild(div);
+            div.className = 'chat-item';
+            div.innerHTML = `<img src="${u.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar"> <span>${u.name}</span> <button class="btn blue" style="margin-left:auto;" onclick="sendFriendReq('${d.id}','${u.name}','${u.photo}')">Jelölés</button>`;
+            document.getElementById('search-res').appendChild(div);
         });
     };
 
-    window.sendRequest = async (email, name, photo) => {
-        const myData = (await getDoc(doc(db, "users", currUser.email))).data();
+    window.sendFriendReq = async (email, name, photo) => {
+        const myD = (await getDoc(doc(db, "users", currUser.email))).data();
         await updateDoc(doc(db, "users", email), {
-            incomingRequests: arrayUnion({ email: currUser.email, name: currUser.displayName, photoURL: myData.photoURL || "" })
+            requests: arrayUnion({ email: currUser.email, name: myD.name, photo: myD.photo || "" })
         });
         alert("Kérelem elküldve!");
-        toggleSearch(false);
     };
 
-    window.handleReq = async (mail, name, photo, accept) => {
+    window.handleFriend = async (email, name, photo, accept) => {
         const myRef = doc(db, "users", currUser.email);
-        const myData = (await getDoc(myRef)).data();
+        const hisRef = doc(db, "users", email);
+        const myD = (await getDoc(myRef)).data();
         if(accept) {
-            await updateDoc(myRef, { friends: arrayUnion({ email: mail, name: name, photoURL: photo }) });
-            await updateDoc(doc(db, "users", mail), { friends: arrayUnion({ email: currUser.email, name: currUser.displayName, photoURL: myData.photoURL || "" }) });
+            await updateDoc(myRef, { friends: arrayUnion({ email, name, photo: photo || "" }) });
+            await updateDoc(hisRef, { friends: arrayUnion({ email: currUser.email, name: myD.name, photo: myD.photo || "" }) });
         }
-        await updateDoc(myRef, { incomingRequests: arrayRemove({ email: mail, name: name, photoURL: photo }) });
+        await updateDoc(myRef, { requests: arrayRemove({ email, name, photo: photo || "" }) });
+    };
+
+    // --- CSOPORT KEZELÉS ---
+    window.openGroupCreate = async () => {
+        document.getElementById('group-modal').style.display = 'flex';
+        const d = (await getDoc(doc(db, "users", currUser.email))).data();
+        document.getElementById('friend-select-list').innerHTML = d.friends.map(f => `
+            <div style="padding:5px;"><input type="checkbox" value="${f.email}" class="g-member"> ${f.name}</div>
+        `).join('');
+    };
+
+    window.createGroup = async () => {
+        const gName = document.getElementById('group-name').value;
+        const members = [currUser.email, ...Array.from(document.querySelectorAll('.g-member:checked')).map(i => i.value)];
+        const gid = "group_" + Date.now();
+        await setDoc(doc(db, "chats", gid), { name: gName, isGroup: true, members });
+        for(let m of members) {
+            await updateDoc(doc(db, "users", m), { groups: arrayUnion({ id: gid, name: gName }) });
+        }
+        closeModals();
     };
 
     // --- CHAT ÉS ÜZENETEK ---
-    function openChat(id, name, group) {
+    async function openChat(id, title, photo, group) {
         activeChat = group ? id : [currUser.email, id].sort().join("_");
-        document.getElementById('chat-title').innerText = name;
-        document.getElementById('group-ops').style.display = group ? "block" : "none";
+        isGroup = group;
+        document.getElementById('chat-title').innerText = title;
+        document.getElementById('chat-avatar').src = photo || "";
+        document.getElementById('chat-avatar').style.display = group ? 'none' : 'block';
+        document.getElementById('chat-actions').style.display = 'flex';
+        document.getElementById('add-member-btn').style.display = group ? 'block' : 'none';
 
         onSnapshot(query(collection(db, "chats", activeChat, "messages"), orderBy("time", "asc")), snap => {
-            const box = document.getElementById('messages'); box.innerHTML = "";
+            const box = document.getElementById('messages');
+            box.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data();
-                const isMine = m.sender === currUser.email;
+                const mine = m.sender === currUser.email;
                 const div = document.createElement('div');
-                div.className = `msg ${isMine ? 'sent' : 'received'}`;
+                div.className = `msg ${mine ? 'sent' : 'received'}`;
                 
-                let content = m.file ? `<img src="${m.file}" style="max-width:200px; border-radius:10px; cursor:pointer;" onclick="window.open('${m.file}')">` : m.text;
-                let time = new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                let body = m.type === 'file' ? `<img src="${m.content}" style="max-width:200px; border-radius:10px;">` : m.content;
+                let time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                 
-                div.innerHTML = `<b>${m.senderName}</b>${content}<span class="time">${time}</span>`;
-                if(isMine) div.onclick = async () => { if(confirm("Visszavonod?")) await deleteDoc(doc(db, "chats", activeChat, "messages", d.id)); };
-                
+                div.innerHTML = `
+                    <img src="${m.senderPhoto || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="msg-avatar">
+                    <div class="msg-content">
+                        ${body}
+                        <span class="msg-info">${time}</span>
+                    </div>
+                `;
+                if(mine) div.onclick = () => { if(confirm("Visszavonod?")) deleteDoc(doc(db, "chats", activeChat, "messages", d.id)); };
                 box.appendChild(div);
             });
             box.scrollTop = box.scrollHeight;
@@ -252,32 +324,50 @@
     window.sendMsg = async () => {
         const inp = document.getElementById('m-input');
         if(!inp.value.trim() || !activeChat) return;
+        const myD = (await getDoc(doc(db, "users", currUser.email))).data();
         await addDoc(collection(db, "chats", activeChat, "messages"), {
-            text: inp.value, sender: currUser.email, senderName: currUser.displayName, time: Date.now()
+            content: inp.value, type: 'text', sender: currUser.email, senderName: myD.name, senderPhoto: myD.photo || "", time: Date.now()
         });
         inp.value = "";
     };
 
-    document.getElementById('f-upload').onchange = e => {
-        const reader = new FileReader();
-        reader.readAsDataURL(e.target.files[0]);
-        reader.onload = async () => {
+    window.sendFile = () => {
+        const file = document.getElementById('file-input').files[0];
+        const r = new FileReader();
+        r.readAsDataURL(file);
+        r.onload = async () => {
+            const myD = (await getDoc(doc(db, "users", currUser.email))).data();
             await addDoc(collection(db, "chats", activeChat, "messages"), {
-                file: reader.result, sender: currUser.email, senderName: currUser.displayName, time: Date.now()
+                content: r.result, type: 'file', sender: currUser.email, senderName: myD.name, senderPhoto: myD.photo || "", time: Date.now()
             });
         };
     };
 
-    // --- AUTH ---
-    window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
-    window.register = async () => {
-        const e = document.getElementById('email').value, n = document.getElementById('reg-name').value;
-        const res = await createUserWithEmailAndPassword(auth, e, document.getElementById('password').value);
-        await updateProfile(res.user, { displayName: n });
-        await setDoc(doc(db, "users", e), { name: n, friends: [], groups: [], incomingRequests: [], photoURL: "" });
-        location.reload();
+    // --- BEÁLLÍTÁSOK ---
+    window.openSettings = () => { document.getElementById('settings-modal').style.display = 'flex'; };
+    window.toggleDarkMode = () => { document.body.classList.toggle('dark-mode'); };
+    window.updateProfilePic = (input) => {
+        const r = new FileReader();
+        r.readAsDataURL(input.files[0]);
+        r.onload = async () => {
+            await updateDoc(doc(db, "users", currUser.email), { photo: r.result });
+            document.getElementById('my-p-img').src = r.result;
+        };
     };
-    window.logout = () => signOut(auth);
+    window.updatePass = () => {
+        const p = document.getElementById('new-pass').value;
+        updatePassword(auth.currentUser, p).then(() => alert("Siker!"));
+    };
+
+    // --- HÍVÁS ---
+    window.startCall = (type) => {
+        document.getElementById('call-overlay').style.display = 'block';
+        document.getElementById('call-overlay').innerText = `${type === 'video' ? 'Videó' : 'Hang'}hívás indítása: ${document.getElementById('chat-title').innerText}...`;
+    };
+    window.endCall = () => { document.getElementById('call-overlay').style.display = 'none'; };
+
+    window.closeModals = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
+    window.signOutUser = () => signOut(auth);
 </script>
 </body>
 </html>
