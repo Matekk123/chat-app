@@ -3,72 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messenger Pro - Fájl letöltéssel</title>
+    <title>BalassaMessenger - Pro</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
-        #sidebar { width: 300px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        
+        /* Sidebar */
+        #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .profile-card { padding: 15px; text-align: center; border-bottom: 1px solid #eee; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; }
-        .item { padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f5f5f5; }
-        #main-chat { flex: 1; display: flex; flex-direction: column; background: white; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; }
         
-        /* Üzenet buborék */
-        .msg { padding: 10px; border-radius: 15px; max-width: 75%; font-size: 14px; position: relative; }
-        .sent { background: #0084ff; color: white; align-self: flex-end; }
-        .received { background: #e4e6eb; align-self: flex-start; }
-        
-        .chat-img { max-width: 200px; border-radius: 10px; margin-top: 5px; display: block; }
-        .download-btn { 
-            display: inline-block; margin-top: 5px; padding: 5px 10px; 
-            background: rgba(255,255,255,0.2); border-radius: 5px; 
-            text-decoration: none; color: inherit; font-size: 11px; border: 1px solid;
-            cursor: pointer;
-        }
-        .received .download-btn { background: #d0d2d6; border-color: #bbb; }
+        .section-title { padding: 10px 15px; background: #f8f9fa; font-size: 11px; font-weight: bold; color: #65676b; display: flex; justify-content: space-between; align-items: center; }
+        .item-list { flex: 1; overflow-y: auto; }
+        .item { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f5f5f5; }
+        .item:hover { background: #f2f2f2; }
 
-        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
-        input[type="text"] { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        /* Chat */
+        #main-chat { flex: 1; display: flex; flex-direction: column; background: white; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: white; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #f0f2f5; }
+        
+        .msg { padding: 10px; border-radius: 15px; max-width: 75%; font-size: 14px; position: relative; word-wrap: break-word; }
+        .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .received { background: #fff; color: #000; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
+        
+        .download-btn { display: inline-block; margin-top: 5px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 5px; text-decoration: none; color: inherit; font-size: 11px; font-weight: bold; border: 1px solid rgba(0,0,0,0.1); text-align: center; width: 100%; }
+        .sent .download-btn { background: rgba(255,255,255,0.2); color: white; }
+
+        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; align-items: center; background: white; }
+        input[type="text"] { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; background: #f0f2f5; }
+        .icon-btn { background: #eee; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 20px; flex-shrink: 0; }
+
+        /* Login Screen */
+        #login-screen { position: fixed; inset: 0; background: white; z-index: 10000; display: flex; align-items: center; justify-content: center; visibility: hidden; }
+        #login-screen.active { visibility: visible; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" style="position:fixed; inset:0; background:white; z-index:3000; display:flex; align-items:center; justify-content:center;">
-        <div style="width:280px; text-align:center;">
-            <h1>Messenger</h1>
-            <input type="email" id="email" placeholder="Email"><br><br>
-            <input type="password" id="password" placeholder="Jelszó"><br><br>
-            <button onclick="login()" style="width:100%; background:#0084ff; color:white; padding:10px; border:none; border-radius:5px;">Belépés</button>
-            <hr>
-            <input type="text" id="reg-name" placeholder="Neved"><br><br>
-            <button onclick="register()" style="width:100%; background:#42b72a; color:white; padding:10px; border:none; border-radius:5px;">Regisztráció</button>
+    <div id="login-screen" class="active">
+        <div style="width:300px; text-align:center;">
+            <h1 style="color:#0084ff; font-size: 32px; margin-bottom: 20px;">BalassaMessenger</h1>
+            <input type="email" id="email" placeholder="Email cím" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+            <input type="password" id="password" placeholder="Jelszó" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+            <button onclick="login()" style="width:100%; background:#0084ff; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Belépés</button>
+            <div style="margin: 20px 0; color: #888;">vagy</div>
+            <input type="text" id="reg-name" placeholder="Teljes neved" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+            <button onclick="register()" style="width:100%; background:#42b72a; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Regisztráció</button>
         </div>
     </div>
 
     <div id="sidebar">
         <div class="profile-card">
-            <label><img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"><input type="file" id="p-upload" hidden accept="image/*"></label>
-            <h3 id="my-name">...</h3>
+            <label title="Profilkép feltöltése">
+                <img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+                <input type="file" id="p-upload" hidden accept="image/*">
+            </label>
+            <h3 id="my-name" style="margin:10px 0 5px 0;">...</h3>
+            <button onclick="logout()" style="border:none; background:none; color:#fa3e3e; cursor:pointer; font-size:12px;">Kijelentkezés</button>
         </div>
-        <div id="friend-list" style="flex:1; overflow-y:auto;"></div>
-        <button onclick="logout()">Kilépés</button>
+        
+        <div class="section-title">CSOPORTOK <button onclick="createGroup()" style="background:none; border:none; color:#0084ff; cursor:pointer; font-size:18px;">+</button></div>
+        <div id="group-list" class="item-list"></div>
+
+        <div class="section-title">BARÁTOK <button onclick="addFriend()" style="background:none; border:none; color:#0084ff; cursor:pointer; font-size:18px;">+</button></div>
+        <div id="friend-list" class="item-list"></div>
     </div>
 
     <div id="main-chat">
-        <div class="chat-header" id="chat-title" style="padding:15px; border-bottom:1px solid #ddd; font-weight:bold;">Válassz chatet</div>
+        <div class="chat-header">
+            <span id="chat-title">BalassaMessenger</span>
+            <button id="add-to-group" style="display:none; cursor:pointer; background:#0084ff; color:white; border:none; padding:8px 12px; border-radius:15px; font-size:12px;" onclick="inviteToGroup()">+ Tag hozzáadása</button>
+        </div>
         <div id="messages"></div>
         <div class="input-area">
-            <label style="cursor:pointer; font-size:20px;">📎<input type="file" id="c-upload" hidden></label>
-            <input type="text" id="msg-input" placeholder="Üzenet..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button onclick="sendMessage()" style="border:none; background:none; color:#0084ff; font-weight:bold;">KÜLDÉS</button>
+            <button class="icon-btn" onclick="document.getElementById('c-upload').click()">📎</button>
+            <input type="file" id="c-upload" hidden>
+            <input type="text" id="msg-input" placeholder="Üzenet írása..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" style="border:none; background:none; color:#0084ff; font-weight:bold; cursor:pointer; padding:0 10px;">KÜLDÉS</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy, where, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAQkoqTNUiJlXJeCOgZ_PrVjafgRdj65UA",
@@ -84,85 +104,96 @@
         const db = getFirestore(app);
         let currentUser = null, activeChatId = null;
 
-        // Fájl átalakítása letölthető szöveggé
         const toBase64 = file => new Promise((res, rej) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => res(reader.result);
-            reader.onerror = error => rej(error);
+            const reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = () => res(reader.result); reader.onerror = e => rej(e);
         });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('login-screen').classList.remove('active');
                 document.getElementById('my-name').innerText = user.displayName;
                 const snap = await getDoc(doc(db, "users", user.email));
                 if(snap.exists() && snap.data().photoURL) document.getElementById('my-avatar').src = snap.data().photoURL;
-                syncData();
-            } else { document.getElementById('login-screen').style.display = 'flex'; }
+                syncSidebar();
+            } else {
+                document.getElementById('login-screen').classList.add('active');
+            }
         });
 
-        // Profilkép feltöltés
-        document.getElementById('p-upload').onchange = async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            const base64 = await toBase64(file);
-            await updateDoc(doc(db, "users", currentUser.email), { photoURL: base64 });
-            document.getElementById('my-avatar').src = base64;
+        window.login = () => {
+            const email = document.getElementById('email').value, pass = document.getElementById('password').value;
+            setPersistence(auth, browserLocalPersistence).then(() => signInWithEmailAndPassword(auth, email, pass)).catch(e => alert(e.message));
         };
 
-        // FÁJL KÜLDÉSE (📎 gomb)
-        document.getElementById('c-upload').onchange = async (e) => {
-            const file = e.target.files[0];
-            if(!file || !activeChatId) return;
-            const base64 = await toBase64(file);
-            await addDoc(collection(db, "chats", activeChatId, "messages"), {
-                fileName: file.name,
-                fileData: base64,
-                fileType: file.type,
-                sender: currentUser.email,
-                senderName: currentUser.displayName,
-                time: Date.now()
-            });
-            e.target.value = ""; // Reset gomb
+        window.register = async () => {
+            const email = document.getElementById('email').value, pass = document.getElementById('password').value, name = document.getElementById('reg-name').value;
+            if(!name) return alert("Adj meg egy nevet!");
+            try {
+                const res = await createUserWithEmailAndPassword(auth, email, pass);
+                await updateProfile(res.user, { displayName: name });
+                await setDoc(doc(db, "users", email), { name, friends: [], photoURL: "" });
+                location.reload();
+            } catch (e) { alert(e.message); }
         };
 
-        function syncData() {
+        window.logout = () => signOut(auth);
+
+        window.createGroup = async () => {
+            const name = prompt("BalassaMessenger csoport neve:");
+            if(name) await addDoc(collection(db, "groups"), { name, members: [currentUser.email], admin: currentUser.email });
+        };
+
+        window.addFriend = async () => {
+            const email = prompt("Barátod email címe:");
+            if(!email || email === currentUser.email) return;
+            const fSnap = await getDoc(doc(db, "users", email));
+            if(!fSnap.exists()) return alert("Nincs ilyen felhasználó!");
+            await updateDoc(doc(db, "users", currentUser.email), { friends: arrayUnion({ email, name: fSnap.data().name, photoURL: fSnap.data().photoURL || "" }) });
+        };
+
+        window.inviteToGroup = async () => {
+            const email = prompt("Email cím a csoporthoz:");
+            if(email) await updateDoc(doc(db, "groups", activeChatId), { members: arrayUnion(email) });
+        };
+
+        function syncSidebar() {
             onSnapshot(doc(db, "users", currentUser.email), (snap) => {
                 const flist = document.getElementById('friend-list'); flist.innerHTML = "";
                 (snap.data().friends || []).forEach(f => {
                     const d = document.createElement('div'); d.className = 'item';
-                    d.innerHTML = `<img src="${f.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" style="width:30px;height:30px;border-radius:50%; object-fit:cover;"> ${f.name}`;
-                    d.onclick = () => openChat([currentUser.email, f.email].sort().join("_"), f.name);
+                    d.innerHTML = `<img src="${f.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;"> ${f.name}`;
+                    d.onclick = () => { document.getElementById('add-to-group').style.display='none'; openChat([currentUser.email, f.email].sort().join("_"), f.name); };
                     flist.appendChild(d);
+                });
+            });
+            onSnapshot(query(collection(db, "groups"), where("members", "array-contains", currentUser.email)), (snap) => {
+                const glist = document.getElementById('group-list'); glist.innerHTML = "";
+                snap.forEach(s => {
+                    const d = document.createElement('div'); d.className = 'item'; d.innerText = "👥 " + s.data().name;
+                    d.onclick = () => { document.getElementById('add-to-group').style.display='block'; openChat(s.id, s.data().name); };
+                    glist.appendChild(d);
                 });
             });
         }
 
+        let unsub = null;
         function openChat(id, title) {
             activeChatId = id; document.getElementById('chat-title').innerText = title;
-            onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), (snap) => {
+            if(unsub) unsub();
+            unsub = onSnapshot(query(collection(db, "chats", id, "messages"), orderBy("time", "asc")), (snap) => {
                 const c = document.getElementById('messages'); c.innerHTML = "";
                 snap.forEach(d => {
                     const m = d.data();
-                    const div = document.createElement('div');
-                    div.className = `msg ${m.sender === currentUser.email ? 'sent' : 'received'}`;
-                    
-                    let content = `<small style="display:block;font-size:9px;margin-bottom:4px;">${m.senderName}</small>`;
-                    
-                    // Ha fájl érkezett
+                    const div = document.createElement('div'); div.className = `msg ${m.sender === currentUser.email ? 'sent' : 'received'}`;
+                    let h = `<small style="display:block;font-size:9px;opacity:0.7;margin-bottom:3px;">${m.senderName}</small>`;
                     if(m.fileData) {
-                        if(m.fileType.startsWith('image/')) {
-                            content += `<img src="${m.fileData}" class="chat-img">`;
-                        }
-                        content += `<a href="${m.fileData}" download="${m.fileName}" class="download-btn">💾 ${m.fileName} letöltése</a>`;
+                        if(m.fileType && m.fileType.startsWith('image/')) h += `<img src="${m.fileData}" class="chat-img">`;
+                        h += `<a href="${m.fileData}" download="${m.fileName || 'fajl'}" class="download-btn">💾 Letöltés</a>`;
                     }
-                    
-                    if(m.text) content += `<div>${m.text}</div>`;
-                    
-                    div.innerHTML = content;
-                    c.appendChild(div);
+                    if(m.text) h += `<div>${m.text}</div>`;
+                    div.innerHTML = h; c.appendChild(div);
                 });
                 c.scrollTop = c.scrollHeight;
             });
@@ -174,15 +205,19 @@
             i.value = "";
         };
 
-        window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
-        window.register = async () => {
-            const email = document.getElementById('email').value, pass = document.getElementById('password').value, name = document.getElementById('reg-name').value;
-            const res = await createUserWithEmailAndPassword(auth, email, pass);
-            await updateProfile(res.user, { displayName: name });
-            await setDoc(doc(db, "users", email), { name, friends: [], photoURL: "" });
-            location.reload();
+        document.getElementById('c-upload').onchange = async (e) => {
+            const file = e.target.files[0]; if(!file || !activeChatId) return;
+            const base64 = await toBase64(file);
+            await addDoc(collection(db, "chats", activeChatId, "messages"), { fileName: file.name, fileData: base64, fileType: file.type, sender: currentUser.email, senderName: currentUser.displayName, time: Date.now() });
+            e.target.value = "";
         };
-        window.logout = () => signOut(auth);
+
+        document.getElementById('p-upload').onchange = async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            const base64 = await toBase64(file);
+            await updateDoc(doc(db, "users", currentUser.email), { photoURL: base64 });
+            document.getElementById('my-avatar').src = base64;
+        };
     </script>
 </body>
 </html>
