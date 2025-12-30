@@ -3,156 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BalassaMessenger - Video Call</title>
+    <title>BalassaMessenger - ChatHead Fix</title>
     <style>
-        /* A korábbi stílusok maradnak, plusz a hívás felülete: */
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
         
+        /* Oldalsáv */
         #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .profile-card { padding: 15px; text-align: center; border-bottom: 1px solid #eee; }
         .avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; background: #eee; }
         
-        #main-chat { flex: 1; display: flex; flex-direction: column; background: white; position: relative; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #f0f2f5; }
-        
-        /* Hívás Ablak Stílusa */
-        #call-overlay {
-            position: absolute; inset: 0; background: #1c1e21; z-index: 500;
-            display: none; flex-direction: column; align-items: center; justify-content: center; color: white;
-        }
-        #video-container { position: relative; width: 100%; height: 80%; display: flex; justify-content: center; background: black; }
-        #remote-video { width: 100%; height: 100%; object-fit: cover; }
-        #local-video { width: 120px; height: 160px; position: absolute; bottom: 20px; right: 20px; border: 2px solid white; border-radius: 8px; background: #333; }
-        
-        .call-controls { display: flex; gap: 20px; padding: 20px; }
-        .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; }
-        .hangup { background: #ff3b30; }
-        .toggle-cam { background: #4e4e4e; }
-        .toggle-mic { background: #4e4e4e; }
+        .section-title { padding: 10px 15px; background: #f8f9fa; font-size: 11px; font-weight: bold; color: #65676b; display: none; }
+        .item-list { overflow-y: auto; flex: 1; }
+        .item { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f5f5f5; }
+        .item:hover { background: #f2f2f2; }
+        .item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #ddd; }
 
-        .incoming-call-notif {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #0084ff; color: white; padding: 15px 25px; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; display: none; gap: 15px; align-items: center;
-        }
-
-        /* Üzenet stílusok (az előzőek alapján) */
-        .msg { padding: 10px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; }
+        /* Chat terület */
+        #main-chat { flex: 1; display: flex; flex-direction: column; background: white; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #f0f2f5; }
+        
+        /* Üzenet buborék */
+        .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; position: relative; }
         .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .received { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .received { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        
+        .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; pointer-events: none; }
+        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #ccc; border: 1px solid rgba(0,0,0,0.1); }
+        .chat-img { max-width: 100%; border-radius: 12px; margin-top: 5px; }
+
+        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; background: white; }
+        input[type="text"] { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; background: #f0f2f5; outline: none; }
+        .icon-btn { background: #eee; border: none; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; font-size: 20px; }
+
+        #login-screen { position: fixed; inset: 0; background: white; z-index: 10000; display: flex; align-items: center; justify-content: center; visibility: hidden; }
+        #login-screen.active { visibility: visible; }
     </style>
 </head>
 <body>
 
-    <div id="incoming-notif" class="incoming-call-notif">
-        <span id="caller-name">Hívás...</span>
-        <button onclick="answerCall()" style="background:#42b72a; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer;">Felvétel</button>
-        <button onclick="rejectCall()" style="background:#ff3b30; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer;">Elutasítás</button>
-    </div>
-
-    <div id="call-overlay">
-        <div id="video-container">
-            <video id="remote-video" autoplay playsinline></video>
-            <video id="local-video" autoplay playsinline muted></video>
-        </div>
-        <div class="call-controls">
-            <button class="call-btn toggle-mic" onclick="toggleMic()" id="mic-btn">🎙️</button>
-            <button class="call-btn toggle-cam" onclick="toggleCam()" id="cam-btn">📹</button>
-            <button class="call-btn hangup" onclick="endCall()">📞</button>
+    <div id="login-screen" class="active">
+        <div style="width:300px; text-align:center;">
+            <h1 style="color:#0084ff">BalassaMessenger</h1>
+            <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <input type="password" id="password" placeholder="Jelszó" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="login()" style="width:100%; background:#0084ff; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">Belépés</button>
+            <p>vagy</p>
+            <input type="text" id="reg-name" placeholder="Teljes neved" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="register()" style="width:100%; background:#42b72a; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">Regisztráció</button>
         </div>
     </div>
-
-    <div id="login-screen" class="active">... (Bejelentkezési űrlap) ...</div>
 
     <div id="sidebar">
         <div class="profile-card">
-            <label><img id="my-avatar" class="avatar" src=""><input type="file" id="p-upload" hidden accept="image/*"></label>
-            <h3 id="my-name">...</h3>
-            <button onclick="logout()">Kijelentkezés</button>
+            <label><img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"><input type="file" id="p-upload" hidden accept="image/*"></label>
+            <h3 id="my-name" style="margin:10px 0 5px 0;">...</h3>
+            <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer; font-size:11px;">Kijelentkezés</button>
         </div>
+        <div id="g-title" class="section-title">CSOPORTOK</div>
+        <div id="group-list" class="item-list" style="flex:0;"></div>
+        <div class="section-title" style="display:block;">BARÁTOK <button onclick="addFriend()" style="float:right; border:none; background:none; color:#0084ff; cursor:pointer;">+</button></div>
         <div id="friend-list" class="item-list"></div>
+        <button onclick="createGroup()" style="margin:10px; padding:10px; border:1px dashed #0084ff; background:#e7f3ff; color:#0084ff; border-radius:8px; cursor:pointer;">+ Új csoport</button>
     </div>
 
     <div id="main-chat">
         <div class="chat-header">
-            <span id="chat-title">Válassz partnert</span>
-            <div id="call-actions" style="display:none;">
-                <button onclick="startCall(true)" style="background:none; border:none; font-size:20px; cursor:pointer;">📹</button>
-                <button onclick="startCall(false)" style="background:none; border:none; font-size:20px; cursor:pointer;">📞</button>
-            </div>
+            <span id="chat-title">BalassaMessenger</span>
+            <button id="add-to-group" style="display:none; background:#0084ff; color:white; border:none; padding:5px 10px; border-radius:10px; cursor:pointer;" onclick="inviteToGroup()">Tag +</button>
         </div>
         <div id="messages"></div>
         <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Üzenet...">
-            <button onclick="sendMessage()">KÜLDÉS</button>
+            <button class="icon-btn" onclick="document.getElementById('c-upload').click()">📎</button>
+            <input type="file" id="c-upload" hidden>
+            <input type="text" id="msg-input" placeholder="Üzenet..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" style="border:none; background:none; color:#0084ff; font-weight:bold; cursor:pointer;">KÜLDÉS</button>
         </div>
     </div>
 
-<script type="module">
-    // Firebase importok (maradnak a régiek)
-    // ... initializeApp, getFirestore, stb. ...
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy, where, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    let localStream;
-    let remoteStream;
-    let peerConnection;
-    let currentCallDocId = null;
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQkoqTNUiJlXJeCOgZ_PrVjafgRdj65UA",
+            authDomain: "sajatmesenger.firebaseapp.com",
+            projectId: "sajatmesenger",
+            storageBucket: "sajatmesenger.firebasestorage.app",
+            messagingSenderId: "916403691764",
+            appId: "1:916403691764:web:51fd4ec82de42c63917ea1"
+        };
 
-    const servers = {
-        iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }]
-    };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null, activeChatId = null;
+        const listeners = {}; 
+        const userPhotosCache = {}; // Gyorsítótár a profilképeknek
 
-    // 1. HÍVÁS INDÍTÁSA
-    window.startCall = async (withVideo) => {
-        document.getElementById('call-overlay').style.display = 'flex';
-        
-        // Média elérése
-        localStream = await navigator.mediaDevices.getUserMedia({ 
-            video: withVideo, 
-            audio: true 
+        const toBase64 = file => new Promise((res) => {
+            const r = new FileReader(); r.readAsDataURL(file);
+            r.onload = () => res(r.result);
         });
-        document.getElementById('local-video').srcObject = localStream;
 
-        // WebRTC Peer beállítása
-        peerConnection = new RTCPeerConnection(servers);
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-        // Signaling Firebase-en keresztül (egyszerűsített logika)
-        // Itt létrehoznánk egy "calls" kollekciót és beleírnánk az Offer-t
-        alert("Hívás kezdeményezése... (A WebRTC signaling szerver beállítást igényel)");
-    };
-
-    // 2. KAMERA / MIKROFON VÁLTÁSA HÍVÁS KÖZBEN
-    window.toggleCam = () => {
-        const videoTrack = localStream.getVideoTracks()[0];
-        if (videoTrack) {
-            videoTrack.enabled = !videoTrack.enabled;
-            document.getElementById('cam-btn').innerText = videoTrack.enabled ? "📹" : "🚫";
-            document.getElementById('cam-btn').style.background = videoTrack.enabled ? "#4e4e4e" : "#ff3b30";
-        } else {
-            // Ha hanghívásból indultunk, itt lehetne hozzáadni a videót menet közben
-            alert("Videó aktiválása...");
+        // ÚJ: Képkezelő, ami azonnal frissíti az összes elemet
+        async function syncPhoto(email) {
+            if (!email) return;
+            const safeEmail = email.replace(/[@.]/g, '-');
+            
+            if (!listeners[email]) {
+                listeners[email] = onSnapshot(doc(db, "users", email), (s) => {
+                    const url = (s.exists() && s.data().photoURL) ? s.data().photoURL : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                    userPhotosCache[email] = url; // Frissítjük a cache-t
+                    
+                    // Minden érintett képet lecserélünk az oldalon
+                    document.querySelectorAll(`.u-img-${safeEmail}`).forEach(img => {
+                        img.src = url;
+                    });
+                    if (currentUser && email === currentUser.email) {
+                        document.getElementById('my-avatar').src = url;
+                    }
+                });
+            }
+            return userPhotosCache[email] || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
         }
-    };
 
-    window.toggleMic = () => {
-        const audioTrack = localStream.getAudioTracks()[0];
-        audioTrack.enabled = !audioTrack.enabled;
-        document.getElementById('mic-btn').innerText = audioTrack.enabled ? "🎙️" : "🔇";
-        document.getElementById('mic-btn').style.background = audioTrack.enabled ? "#4e4e4e" : "#ff3b30";
-    };
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.remove('active');
+                document.getElementById('my-name').innerText = user.displayName;
+                syncPhoto(user.email); 
+                syncSidebar();
+            } else {
+                document.getElementById('login-screen').classList.add('active');
+            }
+        });
 
-    // 3. HÍVÁS Befejezése
-    window.endCall = () => {
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+        window.msgOptions = async (msgId, sender, time) => {
+            const date = new Date(time).toLocaleString('hu-HU', { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'short', day: 'numeric' });
+            if (sender === currentUser.email) {
+                if (confirm(`Küldve: ${date}\n\nSzeretnéd visszavonni?`)) {
+                    await deleteDoc(doc(db, "chats", activeChatId, "messages", msgId));
+                }
+            } else {
+                alert(`Küldve: ${date}`);
+            }
+        };
+
+        function syncSidebar() {
+            onSnapshot(doc(db, "users", currentUser.email), (snap) => {
+                const flist = document.getElementById('friend-list'); flist.innerHTML = "";
+                (snap.data()?.friends || []).forEach(f => {
+                    const safeEmail = f.email.replace(/[@.]/g, '-');
+                    const d = document.createElement('div'); d.className = 'item';
+                    d.innerHTML = `<img class="u-img-${safeEmail}" src="${userPhotosCache[f.email] || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"> <span>${f.name}</span>`;
+                    d.onclick = () => { document.getElementById('add-to-group').style.display='none'; openChat([currentUser.email, f.email].sort().join("_"), f.name); };
+                    flist.appendChild(d);
+                    syncPhoto(f.email);
+                });
+            });
+            // Csoport lista snapshot marad ugyanaz...
+            onSnapshot(query(collection(db, "groups"), where("members", "array-contains", currentUser.email)), (snap) => {
+                const glist = document.getElementById('group-list'); glist.innerHTML = "";
+                document.getElementById('g-title').style.display = snap.empty ? "none" : "block";
+                snap.forEach(s => {
+                    const d = document.createElement('div'); d.className = 'item'; d.innerText = "👥 " + s.data().name;
+                    d.onclick = () => { document.getElementById('add-to-group').style.display='block'; openChat(s.id, s.data().name); };
+                    glist.appendChild(d);
+                });
+            });
         }
-        document.getElementById('call-overlay').style.display = 'none';
-        if (peerConnection) peerConnection.close();
-    };
 
-    // --- A korábbi Messenger üzenetkezelő és profilkép szinkron kódja itt folytatódik ---
-</script>
+        let unsubChat = null;
+        function openChat(chatId, title) {
+            activeChatId = chatId; document.getElementById('chat-title').innerText = title;
+            if(unsubChat) unsubChat();
+            
+            unsubChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc")), (snap) => {
+                const c = document.getElementById('messages'); c.innerHTML = "";
+                snap.forEach(d => {
+                    const m = d.data();
+                    const safeEmail = m.sender.replace(/[@.]/g, '-');
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.sender === currentUser.email ? 'sent' : 'received'}`;
+                    div.onclick = () => msgOptions(d.id, m.sender, m.time);
+                    
+                    // A profilképet a cache-ből vesszük, de a syncPhoto garantálja, hogy ha változik, ez is frissül
+                    const currentPhoto = userPhotosCache[m.sender] || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+                    let html = `<div class="msg-header">
+                        <img class="msg-avatar u-img-${safeEmail}" src="${currentPhoto}">
+                        <small>${m.senderName}</small>
+                    </div>`;
+                    
+                    if(m.fileData) {
+                        if(m.fileType?.startsWith('image/')) html += `<img src="${m.fileData}" class="chat-img">`;
+                        html += `<a href="${m.fileData}" download="${m.fileName}" style="color:inherit;font-size:11px;display:block;margin-top:5px;" onclick="event.stopPropagation()">💾 Fájl</a>`;
+                    }
+                    if(m.text) html += `<div>${m.text}</div>`;
+                    div.innerHTML = html;
+                    c.appendChild(div);
+                    syncPhoto(m.sender); // Figyelő indítása az üzenet küldőjére
+                });
+                c.scrollTop = c.scrollHeight;
+            });
+        }
+
+        // Többi funkció marad... (sendMessage, login, register, stb.)
+        window.sendMessage = async () => {
+            const i = document.getElementById('msg-input'); if(!i.value || !activeChatId) return;
+            const text = i.value; i.value = "";
+            await addDoc(collection(db, "chats", activeChatId, "messages"), { text, sender: currentUser.email, senderName: currentUser.displayName, time: Date.now() });
+        };
+        document.getElementById('p-upload').onchange = async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            const base64 = await toBase64(file);
+            await updateDoc(doc(db, "users", currentUser.email), { photoURL: base64 });
+        };
+        window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message));
+        window.register = async () => {
+            const n = document.getElementById('reg-name').value;
+            const res = await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+            await updateProfile(res.user, { displayName: n });
+            await setDoc(doc(db, "users", res.user.email), { name: n, friends: [], photoURL: "" });
+            location.reload();
+        };
+        window.logout = () => signOut(auth);
+        window.addFriend = async () => {
+            const e = prompt("Email:");
+            const s = await getDoc(doc(db, "users", e));
+            if(s.exists()) await updateDoc(doc(db, "users", currentUser.email), { friends: arrayUnion({ email: e, name: s.data().name }) });
+        };
+        window.createGroup = async () => {
+            const n = prompt("Csoport név:");
+            if(n) await addDoc(collection(db, "groups"), { name: n, members: [currentUser.email] });
+        };
+        window.inviteToGroup = async () => {
+            const e = prompt("Email:");
+            if(e) await updateDoc(doc(db, "groups", activeChatId), { members: arrayUnion(e) });
+        };
+        document.getElementById('c-upload').onchange = async (e) => {
+            const file = e.target.files[0]; if(!file || !activeChatId) return;
+            const base64 = await toBase64(file);
+            await addDoc(collection(db, "chats", activeChatId, "messages"), { fileName: file.name, fileData: base64, fileType: file.type, sender: currentUser.email, senderName: currentUser.displayName, time: Date.now() });
+            e.target.value = "";
+        };
+    </script>
 </body>
 </html>
