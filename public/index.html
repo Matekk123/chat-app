@@ -1,180 +1,47 @@
-<!DOCTYPE html>
-<html lang="hu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saját Messenger</title>
-    <script src="/socket.io/socket.io.js"></script>
-    
-    <script type="module">
-        // Firebase modulok betöltése
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // A TE SAJÁT FIREBASE KONFIGURÁCIÓD
-        const firebaseConfig = {
-            apiKey: "AIzaSyAQkoqTNUiJlXJeCOgZ_PrVjafgRdj65UA",
-            authDomain: "sajatmesenger.firebaseapp.com",
-            projectId: "sajatmesenger",
-            storageBucket: "sajatmesenger.firebasestorage.app",
-            messagingSenderId: "916403691764",
-            appId: "1:916403691764:web:51fd4ec82de42c63917ea1",
-            measurementId: "G-BYNSFK4FBL"
-        };
+    // EBBŐL CSAK EGYETLEN DARAB LEGYEN A TELJES FÁJLBAN:
+    const firebaseConfig = {
+        apiKey: "AIzaSyAQkoqTNUiJlXJeCOgZ_PrVjafgRdj65UA",
+        authDomain: "sajatmesenger.firebaseapp.com",
+        projectId: "sajatmesenger",
+        storageBucket: "sajatmesenger.firebasestorage.app",
+        messagingSenderId: "916403691764",
+        appId: "1:916403691764:web:51fd4ec82de42c63917ea1",
+        measurementId: "G-BYNSFK4FBL"
+    };
 
-        // Firebase inicializálása
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-        // Függvények elérhetővé tétele a gombok számára
-        window.register = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            if (!email || pass.length < 6) return alert("Email és min. 6 karakteres jelszó kell!");
-            
-            createUserWithEmailAndPassword(auth, email, pass)
-                .then(() => alert("Sikeres regisztráció! Most már beléphetsz."))
-                .catch(err => alert("Hiba: " + err.message));
-        };
+    window.register = () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('password').value;
+        if (!email || pass.length < 6) return alert("Email és min. 6 karakteres jelszó kell!");
+        createUserWithEmailAndPassword(auth, email, pass)
+            .then(() => alert("Sikeres regisztráció!"))
+            .catch(err => alert("Hiba: " + err.message));
+    };
 
-        window.login = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            signInWithEmailAndPassword(auth, email, pass)
-                .catch(err => alert("Belépési hiba: " + err.message));
-        };
+    window.login = () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('password').value;
+        signInWithEmailAndPassword(auth, email, pass).catch(err => alert("Hiba: " + err.message));
+    };
 
-        window.logout = () => signOut(auth);
+    window.logout = () => signOut(auth);
 
-        // Bejelentkezési állapot figyelése
-        onAuthStateChanged(auth, (user) => {
-            const loginScreen = document.getElementById('login-screen');
-            const chatScreen = document.getElementById('chat-screen');
-            if (user) {
-                loginScreen.style.display = 'none';
-                chatScreen.style.display = 'flex';
-                document.getElementById('user-email').innerText = user.email;
-                joinRoom('kozponti-szoba'); // Alapértelmezett szoba
-            } else {
-                loginScreen.style.display = 'flex';
-                chatScreen.style.display = 'none';
-            }
-        });
-    </script>
-
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #e5ddd5; }
-        
-        /* Bejelentkező felület */
-        #login-screen { 
-            position: fixed; inset: 0; background: #f0f2f5; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; 
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('user-email').innerText = user.email;
+            joinRoom('kozponti-szoba');
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('chat-screen').style.display = 'none';
         }
-        .login-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        
-        /* Chat felület */
-        #chat-screen { display: none; height: 100vh; flex-direction: column; }
-        .header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        
-        #uzenetek { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .uzenet { background: white; padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .sajat { align-self: flex-end; background: #dcf8c6; }
-        
-        .input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 10px; align-items: center; }
-        input { padding: 12px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 20px; font-weight: bold; transition: 0.2s; }
-        
-        .btn-send { background: #25d366; color: white; }
-        .btn-call { background: #34b7f1; color: white; }
-        .btn-logout { background: #ea4335; color: white; font-size: 10px; }
-    </style>
-</head>
-<body>
-
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="color: #075e54;">Saját Messenger</h2>
-            <input type="email" id="email" placeholder="E-mail cím" style="width: 100%; margin-bottom: 10px;"><br>
-            <input type="password" id="password" placeholder="Jelszó" style="width: 100%; margin-bottom: 20px;"><br>
-            <button onclick="login()" style="width: 100%; background: #25d366; color: white; margin-bottom: 10px;">Belépés</button>
-            <button onclick="register()" style="width: 100%; background: #34b7f1; color: white;">Regisztráció</button>
-        </div>
-    </div>
-
-    <div id="chat-screen">
-        <div class="header">
-            <div>
-                <b id="user-email"></b><br>
-                <small>Szoba: <span id="current-room-name">kozponti-szoba</span></small>
-            </div>
-            <div>
-                <input type="text" id="szobaId" placeholder="Szoba váltás..." style="padding: 5px; font-size: 12px; width: 100px;">
-                <button onclick="changeRoom()" style="padding: 5px 10px; font-size: 12px; background: #128c7e; color: white;">Mehet</button>
-                <button onclick="logout()" class="btn-logout">Kijelentkezés</button>
-            </div>
-        </div>
-
-        <div id="uzenetek"></div>
-
-        <div class="input-area">
-            <button id="hivasBtn" class="btn-call">📞</button>
-            <input type="text" id="szoveg" placeholder="Írj egy üzenetet..." style="flex:1">
-            <button onclick="kuld()" class="btn-send">Küldés</button>
-        </div>
-    </div>
-
-    <script>
-        const socket = io();
-        let aktualisSzoba = 'kozponti-szoba';
-
-        function joinRoom(roomId) {
-            aktualisSzoba = roomId;
-            document.getElementById('current-room-name').innerText = roomId;
-            document.getElementById('uzenetek').innerHTML = `<p style="text-align:center; color:gray; font-size:12px;">Beléptél a <b>${roomId}</b> szobába</p>`;
-            socket.emit('join-room', roomId);
-        }
-
-        function changeRoom() {
-            const ujSzoba = document.getElementById('szobaId').value;
-            if(ujSzoba) {
-                joinRoom(ujSzoba);
-                document.getElementById('szobaId').value = "";
-            }
-        }
-
-        function kuld() {
-            const mezo = document.getElementById('szoveg');
-            const email = document.getElementById('user-email').innerText;
-            if(mezo.value) {
-                socket.emit('privat-uzenet', { 
-                    roomId: aktualisSzoba, 
-                    nev: email, 
-                    szoveg: mezo.value 
-                });
-                mezo.value = "";
-            }
-        }
-
-        socket.on('uj-uzenet', (adat) => {
-            const div = document.createElement('div');
-            const sajatEmail = document.getElementById('user-email').innerText;
-            const isSajat = adat.nev === sajatEmail;
-            
-            div.className = 'uzenet ' + (isSajat ? 'sajat' : '');
-            div.innerHTML = `<small style="color:#075e54; font-size:10px;">${adat.nev}</small><br>${adat.szoveg}`;
-            
-            const container = document.getElementById('uzenetek');
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        });
-
-        // Enter gombra küldés
-        document.getElementById('szoveg').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                kuld();
-            }
-        });
-    </script>
-</body>
-</html>
+    });
+</script>
