@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BalassaMessenger - Admin Pro</title>
+    <title>BalassaMessenger - Kereső Funkció</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
@@ -12,35 +12,47 @@
         .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; }
         #chat-list { flex: 1; overflow-y: auto; }
         .item { padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f0f0f0; }
-        .item:hover { background: #f9f9f9; }
         #main-chat { flex: 1; display: flex; flex-direction: column; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #f0f2f5; display: flex; flex-direction: column; gap: 8px; }
         .msg { max-width: 70%; padding: 10px 14px; border-radius: 18px; font-size: 14px; display: flex; flex-direction: column; }
-        .sent { align-self: flex-end; background: #0084ff; color: white; cursor: pointer; }
+        .sent { align-self: flex-end; background: #0084ff; color: white; }
         .received { align-self: flex-start; background: white; color: black; border: 1px solid #ddd; }
-        .time { font-size: 10px; align-self: flex-end; opacity: 0.6; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; background: white; display: flex; justify-content: space-between; align-items: center; }
-        .input-area { padding: 15px; display: flex; gap: 10px; background: white; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
-        .btn { padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; color: white; }
+        
+        /* KERESŐ MODAL STÍLUS */
+        #search-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10000; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 350px; max-height: 80vh; display: flex; flex-direction: column; }
+        #search-results { flex: 1; overflow-y: auto; margin-top: 10px; }
+        .search-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+
+        .btn { padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; color: white; }
         .blue { background: #0084ff; }
+        .green { background: #2ecc71; }
         .red { background: #e74c3c; }
+        input { width: 100%; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; margin-bottom: 10px; }
         #login-screen { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; visibility: hidden; }
         #login-screen.active { visibility: visible; }
-        .group-tag { background: #e1e1e1; color: #555; font-size: 10px; padding: 2px 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
+
+    <div id="search-modal">
+        <div class="modal-content">
+            <h3>Felhasználó keresése</h3>
+            <input type="text" id="user-search-input" placeholder="Írd be a nevet..." oninput="searchUsers()">
+            <div id="search-results"></div>
+            <button class="btn red" onclick="toggleSearch(false)">Bezárás</button>
+        </div>
+    </div>
 
     <div id="login-screen" class="active">
         <div style="width: 280px; text-align: center;">
             <h2 style="color: #0084ff;">BalassaMessenger</h2>
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="password" placeholder="Jelszó">
-            <button onclick="login()" style="width: 100%; padding: 10px; background: #0084ff; color: white; border: none; border-radius: 5px; margin-top: 10px;">Belépés</button>
+            <button onclick="login()" class="btn blue" style="width:100%">Belépés</button>
             <hr>
             <input type="text" id="reg-name" placeholder="Teljes név">
-            <button onclick="register()" style="width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 5px; margin-top: 5px;">Regisztráció</button>
+            <button onclick="register()" class="btn green" style="width:100%">Regisztráció</button>
         </div>
     </div>
 
@@ -48,35 +60,34 @@
         <div class="profile-card">
             <img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
             <h4 id="my-display-name">...</h4>
-            <button onclick="logout()" style="color: red; background: none; border: none;">Kijelentkezés</button>
+            <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Kijelentkezés</button>
         </div>
+        
+        <div id="request-panel" style="background:#e7f3ff; padding:10px; display:none;">
+            <strong>Új felkérések:</strong>
+            <div id="req-list"></div>
+        </div>
+
         <div id="chat-list"></div>
         <div style="padding: 10px; display: flex; gap: 5px;">
-            <button onclick="sendRequest()" class="btn blue" style="flex:1">+ Jelölés</button>
-            <button onclick="createGroup()" class="btn blue" style="background:#2ecc71; flex:1">+ Csoport</button>
+            <button onclick="toggleSearch(true)" class="btn blue" style="flex:1">🔍 Keresés</button>
+            <button onclick="createGroup()" class="btn green" style="flex:1">+ Csoport</button>
         </div>
     </div>
 
     <div id="main-chat">
-        <div class="chat-header">
-            <span id="chat-title">Válassz beszélgetést</span>
-            <div id="group-controls" style="display:none; gap: 5px; display: flex;">
-                <button class="btn blue" onclick="inviteToGroup()">+ Tag</button>
-                <button id="manage-members-btn" class="btn red" style="display:none;" onclick="manageMembers()">Tagok kezelése</button>
-                <button id="leave-group-btn" class="btn red" onclick="leaveGroup()">Kilépés</button>
-            </div>
-        </div>
+        <div id="chat-header" style="padding:15px; border-bottom:1px solid #ddd; font-weight:bold; background:white;">Válassz egy beszélgetést</div>
         <div id="messages"></div>
-        <div class="input-area">
+        <div style="padding:15px; display:flex; gap:10px; background:white;">
             <input type="text" id="m-input" placeholder="Üzenet..." onkeypress="if(event.key==='Enter') sendMsg()">
-            <button onclick="sendMsg()" class="btn blue" style="padding:10px 20px;">KÜLDÉS</button>
+            <button onclick="sendMsg()" class="btn blue">KÜLDÉS</button>
         </div>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, orderBy, arrayUnion, arrayRemove, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAQkoqTNUiJlXJeCOgZ_PrVjafgRdj65UA",
@@ -91,7 +102,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currUser = null, activeChat = null, adminEmail = null;
+    let currUser = null, activeChat = null;
 
     onAuthStateChanged(auth, u => {
         if(u) { currUser = u; document.getElementById('login-screen').classList.remove('active'); initApp(); }
@@ -108,79 +119,92 @@
                 d.onclick=()=>openChat(f.email, f.name, false); list.appendChild(d);
             });
             (data.groups || []).forEach(g => {
-                const d = document.createElement('div'); d.className="item"; d.innerHTML=`👥 ${g.name} <span class="group-tag">CSOP</span>`;
+                const d = document.createElement('div'); d.className="item"; d.innerHTML=`👥 ${g.name}`;
                 d.onclick=()=>openChat(g.id, g.name, true); list.appendChild(d);
             });
+
+            // Kérelmek listázása
+            const reqBox = document.getElementById('request-panel');
+            const reqs = data.incomingRequests || [];
+            if(reqs.length > 0) {
+                reqBox.style.display = "block";
+                document.getElementById('req-list').innerHTML = reqs.map(r => `
+                    <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                        <span>${r.name}</span>
+                        <button onclick="handleReq('${r.email}','${r.name}',true)" class="btn green" style="padding:2px 5px">✔</button>
+                    </div>`).join('');
+            } else { reqBox.style.display = "none"; }
         });
     }
 
-    window.createGroup = async () => {
-        const n = prompt("Csoport neve:"); if(!n) return;
-        const id = "group_" + Date.now();
-        await setDoc(doc(db, "chats", id), { name: n, isGroup: true, admin: currUser.email, members: [currUser.email] });
-        await updateDoc(doc(db, "users", currUser.email), { groups: arrayUnion({ id: id, name: n }) });
+    // --- KERESÉS FUNKCIÓ ---
+    window.toggleSearch = (show) => {
+        document.getElementById('search-modal').style.display = show ? 'flex' : 'none';
+        if(!show) document.getElementById('search-results').innerHTML = "";
     };
 
-    window.manageMembers = async () => {
-        const snap = await getDoc(doc(db, "chats", activeChat));
-        const members = snap.data().members;
-        let txt = "Csoport tagjai:\n";
-        members.forEach((m, i) => txt += `${i}: ${m}\n`);
-        const idx = prompt(txt + "\nÍrd be a számot a kidobáshoz (vagy hagyd üresen):");
-        if(idx !== null && members[idx]) {
-            const victim = members[idx];
-            if(victim === currUser.email) return alert("Magadat nem dobhatod ki!");
-            await updateDoc(doc(db, "chats", activeChat), { members: arrayRemove(victim) });
-            await updateDoc(doc(db, "users", victim), { groups: arrayRemove({ id: activeChat, name: document.getElementById('chat-title').innerText }) });
-            alert(victim + " eltávolítva.");
-        }
-    };
+    window.searchUsers = async () => {
+        const val = document.getElementById('user-search-input').value.trim();
+        const resultsBox = document.getElementById('search-results');
+        if(val.length < 2) { resultsBox.innerHTML = ""; return; }
 
-    window.leaveGroup = async () => {
-        if(!confirm("Biztosan kilépsz?")) return;
-        await updateDoc(doc(db, "chats", activeChat), { members: arrayRemove(currUser.email) });
-        await updateDoc(doc(db, "users", currUser.email), { groups: arrayRemove({ id: activeChat, name: document.getElementById('chat-title').innerText }) });
-        location.reload();
-    };
-
-    async function openChat(id, name, isGroup) {
-        activeChat = isGroup ? id : [currUser.email, id].sort().join("_");
-        document.getElementById('chat-title').innerText = name;
-        const controls = document.getElementById('group-controls');
+        const q = query(collection(db, "users"), where("name", ">=", val), where("name", "<=", val + '\uf8ff'));
+        const snap = await getDocs(q);
+        resultsBox.innerHTML = "";
         
-        if(isGroup) {
-            controls.style.display = "flex";
-            const snap = await getDoc(doc(db, "chats", id));
-            adminEmail = snap.data().admin;
-            document.getElementById('manage-members-btn').style.display = (adminEmail === currUser.email) ? "block" : "none";
-        } else { controls.style.display = "none"; }
+        snap.forEach(d => {
+            const userData = d.data();
+            const userEmail = d.id;
+            if(userEmail === currUser.email) return; // Magunkat ne találjuk meg
 
+            const div = document.createElement('div');
+            div.className = "search-item";
+            div.innerHTML = `<span>${userData.name}</span> 
+                             <button onclick="sendRequest('${userEmail}', '${userData.name}')" class="btn blue">Jelölés</button>`;
+            resultsBox.appendChild(div);
+        });
+    };
+
+    window.sendRequest = async (email, name) => {
+        await updateDoc(doc(db, "users", email), {
+            incomingRequests: arrayUnion({ email: currUser.email, name: currUser.displayName })
+        });
+        alert("Barátkérelem elküldve " + name + " részére!");
+        toggleSearch(false);
+    };
+
+    window.handleReq = async (mail, name, accept) => {
+        const myRef = doc(db, "users", currUser.email);
+        if(accept) {
+            await updateDoc(myRef, { friends: arrayUnion({ email: mail, name: name }) });
+            await updateDoc(doc(db, "users", mail), { friends: arrayUnion({ email: currUser.email, name: currUser.displayName }) });
+        }
+        await updateDoc(myRef, { incomingRequests: arrayRemove({ email: mail, name: name }) });
+    };
+
+    // --- CHAT ÉS ÜZENETEK ---
+    function openChat(id, name, group) {
+        activeChat = group ? id : [currUser.email, id].sort().join("_");
+        document.getElementById('chat-header').innerText = name;
         onSnapshot(query(collection(db, "chats", activeChat, "messages"), orderBy("time", "asc")), snap => {
             const box = document.getElementById('messages'); box.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data();
                 const div = document.createElement('div');
                 div.className = `msg ${m.sender === currUser.email ? 'sent' : 'received'}`;
-                div.innerHTML = `<b>${m.senderName}</b>${m.text}<span class="time">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
+                div.innerHTML = `<b>${m.senderName}</b>${m.text}`;
                 box.appendChild(div);
             });
             box.scrollTop = box.scrollHeight;
         });
     }
 
-    window.inviteToGroup = async () => {
-        const mail = prompt("Email:"); if(!mail) return;
-        const target = await getDoc(doc(db, "users", mail));
-        if(target.exists()) {
-            await updateDoc(doc(db, "users", mail), { groups: arrayUnion({ id: activeChat, name: document.getElementById('chat-title').innerText }) });
-            await updateDoc(doc(db, "chats", activeChat), { members: arrayUnion(mail) });
-            alert("Hozzáadva!");
-        }
-    };
-
     window.sendMsg = async () => {
-        const inp = document.getElementById('m-input'); if(!inp.value.trim()) return;
-        await addDoc(collection(db, "chats", activeChat, "messages"), { text: inp.value, sender: currUser.email, senderName: currUser.displayName, time: Date.now() });
+        const inp = document.getElementById('m-input');
+        if(!inp.value.trim() || !activeChat) return;
+        await addDoc(collection(db, "chats", activeChat, "messages"), {
+            text: inp.value, sender: currUser.email, senderName: currUser.displayName, time: Date.now()
+        });
         inp.value = "";
     };
 
