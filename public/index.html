@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saját Messenger - Felhasználónévvel</title>
+    <title>Saját Messenger</title>
     <script src="/socket.io/socket.io.js"></script>
     
     <script type="module">
@@ -23,37 +23,22 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // REGISZTRÁCIÓ névvel
         window.register = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
             const nev = document.getElementById('reg-name').value;
-            
-            if (!email || pass.length < 6 || !nev) return alert("Minden mezőt tölts ki (jelszó min. 6 karakter)!");
-            
+            if (!email || pass.length < 6 || !nev) return alert("Minden mezőt tölts ki!");
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 await updateProfile(userCredential.user, { displayName: nev });
-                alert("Sikeres regisztráció, üdvözlünk " + nev + "!");
-            } catch (err) { alert("Hiba: " + err.message); }
-        };
-
-        // NÉV MÓDOSÍTÁSA bejelentkezve
-        window.changeDisplayName = async () => {
-            const ujNev = prompt("Add meg az új felhasználóneved:");
-            if (ujNev && auth.currentUser) {
-                try {
-                    await updateProfile(auth.currentUser, { displayName: ujNev });
-                    document.getElementById('user-display-name').innerText = ujNev;
-                    alert("Név frissítve!");
-                } catch (err) { alert("Hiba: " + err.message); }
-            }
+                location.reload();
+            } catch (err) { alert(err.message); }
         };
 
         window.login = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(err => alert("Hiba: " + err.message));
+            signInWithEmailAndPassword(auth, email, pass).catch(err => alert(err.message));
         };
 
         window.logout = () => signOut(auth);
@@ -62,7 +47,6 @@
             if (user) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('chat-screen').style.display = 'flex';
-                // Ha nincs név beállítva (régi júzer), az emailt mutatjuk
                 document.getElementById('user-display-name').innerText = user.displayName || user.email;
                 joinRoom('kozponti-szoba');
             } else {
@@ -73,71 +57,88 @@
     </script>
 
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: sans-serif; margin: 0; background: #e5ddd5; }
-        #login-screen { position: fixed; inset: 0; background: #f0f2f5; display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .login-box { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; width: 100%; margin-bottom: 10px; outline: none; }
-        button { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: #f0f2f5; }
         
+        /* Login */
+        #login-screen { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-box { width: 90%; max-width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; }
+        
+        /* Chat */
         #chat-screen { display: none; height: 100vh; flex-direction: column; }
-        .header { background: #075e54; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
         #uzenetek { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .uzenet { background: white; padding: 8px 12px; border-radius: 12px; max-width: 80%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .sajat { align-self: flex-end; background: #dcf8c6; }
-        .footer { padding: 10px; background: #f0f0f0; display: flex; gap: 8px; }
+        .uzenet { padding: 10px 15px; border-radius: 18px; max-width: 70%; background: #e4e6eb; font-size: 15px; }
+        .sajat { align-self: flex-end; background: #0084ff; color: white; }
+        
+        /* Hívás ablak (Messenger stílus) */
+        #call-overlay { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 2000; flex-direction: column; align-items: center; justify-content: center; color: white; 
+        }
+        .caller-img { width: 100px; height: 100px; background: #555; border-radius: 50%; margin-bottom: 20px; border: 3px solid #0084ff; }
+        .call-buttons { display: flex; gap: 40px; margin-top: 50px; }
+        .c-btn { width: 65px; height: 65px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
+        .accept { background: #31a24c; }
+        .decline { background: #fa3e3e; }
+        
+        .footer { padding: 10px; background: white; display: flex; gap: 10px; }
+        .footer button { background: none; border: none; font-size: 20px; cursor: pointer; color: #0084ff; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>Belépés</h2>
-            <input type="email" id="email" placeholder="E-mail">
+            <h1 style="color:#0084ff">Messenger</h1>
+            <input type="email" id="email" placeholder="Email">
             <input type="password" id="password" placeholder="Jelszó">
-            <button onclick="login()" style="background: #25d366; color: white; width: 100%;">Bejelentkezés</button>
-            <hr>
-            <h3>Új vagy? Regisztrálj:</h3>
-            <input type="text" id="reg-name" placeholder="Választott felhasználónév">
-            <button onclick="register()" style="background: #34b7f1; color: white; width: 100%;">Regisztráció</button>
+            <button onclick="login()" style="width:100%; background:#0084ff; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold;">Bejelentkezés</button>
+            <p>vagy</p>
+            <input type="text" id="reg-name" placeholder="Teljes név">
+            <button onclick="register()" style="width:100%; background:#31a24c; color:white; border:none; padding:12px; border-radius:8px;">Regisztráció</button>
+        </div>
+    </div>
+
+    <div id="call-overlay">
+        <div class="caller-img"></div>
+        <h2 id="caller-name">Bejövő hívás...</h2>
+        <div class="call-buttons">
+            <button class="c-btn decline" onclick="endCall()">📞</button>
+            <button class="c-btn accept" onclick="acceptCall()">📞</button>
         </div>
     </div>
 
     <div id="chat-screen">
         <div class="header">
-            <div>
-                <b id="user-display-name" onclick="changeDisplayName()" style="cursor:pointer; text-decoration: underline;">Név betöltése...</b>
-                <br><small id="room-info">Szoba: kozponti-szoba</small>
-            </div>
-            <button onclick="logout()" style="background:#ea4335; color:white; font-size:10px;">Kilépés</button>
+            <b id="user-display-name">Betöltés...</b>
+            <button onclick="startCall()" style="background:none; border:none; font-size:22px; cursor:pointer;">📞</button>
         </div>
         <div id="uzenetek"></div>
         <div class="footer">
-            <input type="text" id="szobaId" placeholder="Szoba neve..." style="width:100px; margin:0;">
-            <button onclick="joinRoom(document.getElementById('szobaId').value)" style="background:#128c7e; color:white;">Váltás</button>
-            <input type="text" id="szoveg" placeholder="Üzenet..." style="flex:1; margin:0;">
-            <button onclick="kuld()" style="background:#25d366; color:white;">Küldés</button>
+            <input type="text" id="szoveg" placeholder="Aa" style="border-radius:20px; background:#f0f2f5; border:none;">
+            <button onclick="kuld()">➡️</button>
         </div>
     </div>
 
+    <audio id="tavoliHang" autoplay></audio>
+
     <script>
         const socket = io();
-        let aktualisSzoba = 'kozponti-szoba';
+        let pc, localStream, room = 'kozponti-szoba';
 
         window.joinRoom = (id) => {
-            if(!id) return;
-            aktualisSzoba = id;
-            document.getElementById('room-info').innerText = "Szoba: " + id;
-            document.getElementById('uzenetek').innerHTML = `<p style="text-align:center; color:gray">Beléptél: ${id}</p>`;
+            room = id;
             socket.emit('join-room', id);
         };
 
         window.kuld = () => {
-            const input = document.getElementById('szoveg');
+            const val = document.getElementById('szoveg').value;
             const nev = document.getElementById('user-display-name').innerText;
-            if(input.value) {
-                socket.emit('privat-uzenet', { roomId: aktualisSzoba, nev: nev, szoveg: input.value });
-                input.value = "";
+            if(val) {
+                socket.emit('privat-uzenet', { roomId: room, nev: nev, szoveg: val });
+                document.getElementById('szoveg').value = "";
             }
         };
 
@@ -145,10 +146,56 @@
             const div = document.createElement('div');
             const isSajat = adat.nev === document.getElementById('user-display-name').innerText;
             div.className = 'uzenet ' + (isSajat ? 'sajat' : '');
-            div.innerHTML = `<small style="color:green">${adat.nev}</small><br>${adat.szoveg}`;
+            div.innerText = adat.szoveg;
             document.getElementById('uzenetek').appendChild(div);
             document.getElementById('uzenetek').scrollTop = document.getElementById('uzenetek').scrollHeight;
         });
+
+        // HÍVÁS LOGIKA
+        async function startCall() {
+            document.getElementById('call-overlay').style.display = 'flex';
+            document.getElementById('caller-name').innerText = "Hívás indítása...";
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            setupPeer();
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('hivas-ajanlat', { offer, nev: document.getElementById('user-display-name').innerText });
+        }
+
+        socket.on('hivas-ajanlat', async (adat) => {
+            document.getElementById('call-overlay').style.display = 'flex';
+            document.getElementById('caller-name').innerText = adat.nev + " hív téged...";
+            // Itt tároljuk el az ajánlatot, hogy a felvételnél használhassuk
+            window.pendingOffer = adat.offer;
+        });
+
+        async function acceptCall() {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            setupPeer();
+            await pc.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit('hivas-valasz', answer);
+            document.getElementById('caller-name').innerText = "Vonalban...";
+        }
+
+        socket.on('hivas-valasz', async (answer) => {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            document.getElementById('caller-name').innerText = "Vonalban...";
+        });
+
+        function setupPeer() {
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+            pc.ontrack = e => document.getElementById('tavoliHang').srcObject = e.streams[0];
+            pc.onicecandidate = e => e.candidate && socket.emit('ice-candidate', e.candidate);
+        }
+
+        socket.on('ice-candidate', c => pc && pc.addIceCandidate(new RTCIceCandidate(c)));
+
+        function endCall() {
+            location.reload();
+        }
     </script>
 </body>
 </html>
