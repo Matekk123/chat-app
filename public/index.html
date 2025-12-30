@@ -132,4 +132,23 @@
             socket.emit('join-room', id);
         };
 
-        window.kuld =
+        window.kuld = () => {
+            const input = document.getElementById('szoveg');
+            const nev = document.getElementById('user-display-name').innerText;
+            if(input.value) {
+                socket.emit('privat-uzenet', { roomId: aktualisSzoba, nev: nev, szoveg: input.value });
+                input.value = "";
+            }
+        };
+
+        socket.on('uj-uzenet', (adat) => {
+            const div = document.createElement('div');
+            const isSajat = adat.nev === document.getElementById('user-display-name').innerText;
+            div.className = 'uzenet ' + (isSajat ? 'sajat' : '');
+            div.innerHTML = `<small style="color:green">${adat.nev}</small><br>${adat.szoveg}`;
+            document.getElementById('uzenetek').appendChild(div);
+            document.getElementById('uzenetek').scrollTop = document.getElementById('uzenetek').scrollHeight;
+        });
+    </script>
+</body>
+</html>
