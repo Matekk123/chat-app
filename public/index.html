@@ -3,35 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BalassaMessenger - Profil Fix</title>
+    <title>BalassaMessenger - ChatHead Sync</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; overflow: hidden; }
         
+        /* Sidebar */
         #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .profile-card { padding: 15px; text-align: center; border-bottom: 1px solid #eee; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; background: #eee; }
+        .avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #0084ff; cursor: pointer; background: #eee; }
         
         .section-title { padding: 10px 15px; background: #f8f9fa; font-size: 11px; font-weight: bold; color: #65676b; display: none; }
         .item-list { overflow-y: auto; flex: 1; }
         .item { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f5f5f5; }
         .item:hover { background: #f2f2f2; }
-        .item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #ddd; }
+        .item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #ddd; }
 
+        /* Chat */
         #main-chat { flex: 1; display: flex; flex-direction: column; background: white; }
         .chat-header { padding: 15px; border-bottom: 1px solid #ddd; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #f0f2f5; }
         
-        .msg { padding: 8px 12px; border-radius: 15px; max-width: 75%; font-size: 14px; display: flex; flex-direction: column; cursor: pointer; position: relative; }
-        .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        /* Üzenet buborék */
+        .msg { padding: 10px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; display: flex; flex-direction: column; }
+        .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .received { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         
-        .msg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; pointer-events: none; }
-        .msg-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: #eee; }
-        .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; pointer-events: none; }
+        /* Chatfej stílusa az üzeneteknél */
+        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #eee; border: 1px solid rgba(0,0,0,0.05); }
+        .chat-img { max-width: 100%; border-radius: 12px; margin-top: 5px; }
 
-        .input-area { padding: 12px; display: flex; gap: 10px; border-top: 1px solid #ddd; background: white; }
-        input[type="text"] { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; }
+        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; background: white; }
+        input[type="text"] { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; }
         .icon-btn { background: #eee; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 18px; }
 
         #login-screen { position: fixed; inset: 0; background: white; z-index: 10000; display: flex; align-items: center; justify-content: center; visibility: hidden; }
@@ -43,31 +47,31 @@
     <div id="login-screen" class="active">
         <div style="width:300px; text-align:center;">
             <h1 style="color:#0084ff">BalassaMessenger</h1>
-            <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:8px;">
-            <input type="password" id="password" placeholder="Jelszó" style="width:100%; padding:10px; margin-bottom:8px;">
-            <button onclick="login()" style="width:100%; background:#0084ff; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">Belépés</button>
+            <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <input type="password" id="password" placeholder="Jelszó" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="login()" style="width:100%; background:#0084ff; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Belépés</button>
             <p>vagy</p>
-            <input type="text" id="reg-name" placeholder="Teljes neved" style="width:100%; padding:10px; margin-bottom:8px;">
-            <button onclick="register()" style="width:100%; background:#42b72a; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">Regisztráció</button>
+            <input type="text" id="reg-name" placeholder="Teljes neved" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="register()" style="width:100%; background:#42b72a; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Regisztráció</button>
         </div>
     </div>
 
     <div id="sidebar">
         <div class="profile-card">
             <label><img id="my-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"><input type="file" id="p-upload" hidden accept="image/*"></label>
-            <h3 id="my-name">...</h3>
-            <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer; font-size:11px;">Kijelentkezés</button>
+            <h3 id="my-name" style="margin:10px 0 5px 0;">...</h3>
+            <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer; font-size:11px; font-weight:bold;">Kijelentkezés</button>
         </div>
         <div id="g-title" class="section-title">CSOPORTOK</div>
         <div id="group-list" class="item-list" style="flex:0;"></div>
         <div class="section-title" style="display:block;">BARÁTOK <button onclick="addFriend()" style="float:right; border:none; background:none; color:#0084ff; cursor:pointer;">+</button></div>
         <div id="friend-list" class="item-list"></div>
-        <button onclick="createGroup()" style="margin:10px; padding:8px; border:1px dashed #0084ff; background:#e7f3ff; color:#0084ff; border-radius:5px; cursor:pointer;">+ Új csoport</button>
+        <button onclick="createGroup()" style="margin:10px; padding:10px; border:1px dashed #0084ff; background:#e7f3ff; color:#0084ff; border-radius:8px; cursor:pointer;">+ Új csoport</button>
     </div>
 
     <div id="main-chat">
         <div class="chat-header">
-            <span id="chat-title">Válassz egy beszélgetést</span>
+            <span id="chat-title">BalassaMessenger</span>
             <button id="add-to-group" style="display:none; background:#0084ff; color:white; border:none; padding:5px 10px; border-radius:10px; cursor:pointer;" onclick="inviteToGroup()">Tag +</button>
         </div>
         <div id="messages"></div>
@@ -97,21 +101,28 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         let currentUser = null, activeChatId = null;
-        const activeListeners = {};
+        const photoListeners = {};
 
-        const toBase64 = file => new Promise((res, rej) => {
+        const toBase64 = file => new Promise((res) => {
             const r = new FileReader(); r.readAsDataURL(file);
-            r.onload = () => res(r.result); r.onerror = e => rej(e);
+            r.onload = () => res(r.result);
         });
 
-        // Általános képfigyelő
-        function subscribeToUserPhoto(email) {
+        // UNIVERZÁLIS SZINKRON: Barátlista + Chatfejek + Saját kép
+        function syncPhoto(email) {
+            if (!email) return;
             const safeEmail = email.replace(/[@.]/g, '-');
-            if (activeListeners[email]) return;
-            activeListeners[email] = onSnapshot(doc(db, "users", email), (s) => {
+            if (photoListeners[email]) return; 
+
+            photoListeners[email] = onSnapshot(doc(db, "users", email), (s) => {
                 const url = (s.exists() && s.data().photoURL) ? s.data().photoURL : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                document.querySelectorAll(`.user-photo-${safeEmail}`).forEach(img => img.src = url);
-                // Ha ez a saját emailünk, a nagy avatarunkat is frissítjük
+                
+                // Frissíti az összes ilyen osztályú képet (oldalsáv + chat üzenetek)
+                document.querySelectorAll(`.u-img-${safeEmail}`).forEach(img => {
+                    img.src = url;
+                });
+
+                // Ha saját magunkról van szó, a nagy avatart is
                 if (currentUser && email === currentUser.email) {
                     document.getElementById('my-avatar').src = url;
                 }
@@ -123,40 +134,35 @@
                 currentUser = user;
                 document.getElementById('login-screen').classList.remove('active');
                 document.getElementById('my-name').innerText = user.displayName;
-                subscribeToUserPhoto(user.email); // Saját kép betöltése indításkor
+                syncPhoto(user.email); 
                 syncSidebar();
             } else {
                 document.getElementById('login-screen').classList.add('active');
             }
         });
 
-        // Üzenet kattintás: Idő + Visszavonás
-        window.handleMsgClick = async (msgId, senderEmail, timestamp) => {
-            const timeStr = new Date(timestamp).toLocaleString('hu-HU', { 
-                year: 'numeric', month: 'short', day: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
-            });
-            
-            if (senderEmail === currentUser.email) {
-                if (confirm(`Küldve: ${timeStr}\n\nSzeretnéd visszavonni ezt az üzenetet?`)) {
+        // Időpont és visszavonás kezelő
+        window.msgOptions = async (msgId, sender, time) => {
+            const date = new Date(time).toLocaleString('hu-HU', { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'short', day: 'numeric' });
+            if (sender === currentUser.email) {
+                if (confirm(`Küldve: ${date}\n\nSzeretnéd visszavonni ezt az üzenetet?`)) {
                     await deleteDoc(doc(db, "chats", activeChatId, "messages", msgId));
                 }
             } else {
-                alert(`Küldve: ${timeStr}`);
+                alert(`Küldve: ${date}`);
             }
         };
 
         function syncSidebar() {
             onSnapshot(doc(db, "users", currentUser.email), (snap) => {
                 const flist = document.getElementById('friend-list'); flist.innerHTML = "";
-                const data = snap.data() || {};
-                (data.friends || []).forEach(f => {
+                (snap.data()?.friends || []).forEach(f => {
                     const safeEmail = f.email.replace(/[@.]/g, '-');
                     const d = document.createElement('div'); d.className = 'item';
-                    d.innerHTML = `<img class="user-photo-${safeEmail}" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"> <span>${f.name}</span>`;
+                    d.innerHTML = `<img class="u-img-${safeEmail}" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"> <span>${f.name}</span>`;
                     d.onclick = () => { document.getElementById('add-to-group').style.display='none'; openChat([currentUser.email, f.email].sort().join("_"), f.name); };
                     flist.appendChild(d);
-                    subscribeToUserPhoto(f.email);
+                    syncPhoto(f.email);
                 });
             });
 
@@ -175,6 +181,7 @@
         function openChat(chatId, title) {
             activeChatId = chatId; document.getElementById('chat-title').innerText = title;
             if(unsubChat) unsubChat();
+            
             unsubChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc")), (snap) => {
                 const c = document.getElementById('messages'); c.innerHTML = "";
                 snap.forEach(d => {
@@ -182,59 +189,66 @@
                     const safeEmail = m.sender.replace(/[@.]/g, '-');
                     const div = document.createElement('div');
                     div.className = `msg ${m.sender === currentUser.email ? 'sent' : 'received'}`;
-                    div.onclick = () => handleMsgClick(d.id, m.sender, m.time);
+                    div.onclick = () => msgOptions(d.id, m.sender, m.time);
                     
-                    let content = `<div class="msg-header"><img class="msg-avatar user-photo-${safeEmail}" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"><small>${m.senderName}</small></div>`;
+                    // ÜZENET FEJLÉC CHATFEJJEL (Dinamikus u-img- osztály)
+                    let html = `<div class="msg-header">
+                        <img class="msg-avatar u-img-${safeEmail}" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+                        <small>${m.senderName}</small>
+                    </div>`;
+                    
                     if(m.fileData) {
-                        if(m.fileType?.startsWith('image/')) content += `<img src="${m.fileData}" class="chat-img">`;
-                        content += `<a href="${m.fileData}" download="${m.fileName}" class="download-btn" onclick="event.stopPropagation()">💾 Fájl</a>`;
+                        if(m.fileType?.startsWith('image/')) html += `<img src="${m.fileData}" class="chat-img">`;
+                        html += `<a href="${m.fileData}" download="${m.fileName}" style="color:inherit;font-size:11px;display:block;margin-top:5px;" onclick="event.stopPropagation()">💾 Fájl</a>`;
                     }
-                    if(m.text) content += `<div>${m.text}</div>`;
-                    div.innerHTML = content;
+                    if(m.text) html += `<div>${m.text}</div>`;
+                    div.innerHTML = html;
                     c.appendChild(div);
-                    subscribeToUserPhoto(m.sender);
+                    syncPhoto(m.sender); // Azonnal elindítja a figyelőt a chatfej képére is
                 });
                 c.scrollTop = c.scrollHeight;
             });
         }
 
-        // Többi funkció (login, register, upload)
-        window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message));
-        window.register = async () => {
-            const res = await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
-            await updateProfile(res.user, { displayName: document.getElementById('reg-name').value });
-            await setDoc(doc(db, "users", res.user.email), { name: document.getElementById('reg-name').value, friends: [], photoURL: "" });
-            location.reload();
-        };
-        window.logout = () => signOut(auth);
         window.sendMessage = async () => {
             const i = document.getElementById('msg-input'); if(!i.value || !activeChatId) return;
             const text = i.value; i.value = "";
             await addDoc(collection(db, "chats", activeChatId, "messages"), { text, sender: currentUser.email, senderName: currentUser.displayName, time: Date.now() });
+        };
+
+        document.getElementById('p-upload').onchange = async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            const base64 = await toBase64(file);
+            await updateDoc(doc(db, "users", currentUser.email), { photoURL: base64 });
+        };
+
+        window.login = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(e => alert(e.message));
+        window.register = async () => {
+            const n = document.getElementById('reg-name').value;
+            const res = await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+            await updateProfile(res.user, { displayName: n });
+            await setDoc(doc(db, "users", res.user.email), { name: n, friends: [], photoURL: "" });
+            location.reload();
+        };
+        window.logout = () => signOut(auth);
+        window.createGroup = async () => {
+            const n = prompt("Csoport neve:");
+            if(n) await addDoc(collection(db, "groups"), { name: n, members: [currentUser.email] });
+        };
+        window.addFriend = async () => {
+            const e = prompt("Email:");
+            const s = await getDoc(doc(db, "users", e));
+            if(s.exists()) await updateDoc(doc(db, "users", currentUser.email), { friends: arrayUnion({ email: e, name: s.data().name }) });
+        };
+        window.inviteToGroup = async () => {
+            const e = prompt("Email:");
+            if(e) await updateDoc(doc(db, "groups", activeChatId), { members: arrayUnion(e) });
         };
         document.getElementById('c-upload').onchange = async (e) => {
             const file = e.target.files[0]; if(!file || !activeChatId) return;
             const base64 = await toBase64(file);
             await addDoc(collection(db, "chats", activeChatId, "messages"), { fileName: file.name, fileData: base64, fileType: file.type, sender: currentUser.email, senderName: currentUser.displayName, time: Date.now() });
             e.target.value = "";
-        };
-        document.getElementById('p-upload').onchange = async (e) => {
-            const file = e.target.files[0]; if(!file) return;
-            const base64 = await toBase64(file);
-            await updateDoc(doc(db, "users", currentUser.email), { photoURL: base64 });
-        };
-        window.createGroup = async () => {
-            const n = prompt("Csoport neve:");
-            if(n) await addDoc(collection(db, "groups"), { name: n, members: [currentUser.email] });
-        };
-        window.addFriend = async () => {
-            const e = prompt("Barát email címe:");
-            const s = await getDoc(doc(db, "users", e));
-            if(s.exists()) await updateDoc(doc(db, "users", currentUser.email), { friends: arrayUnion({ email: e, name: s.data().name }) });
-        };
-        window.inviteToGroup = async () => {
-            const e = prompt("Meghívás emaillel:");
-            if(e) await updateDoc(doc(db, "groups", activeChatId), { members: arrayUnion(e) });
         };
     </script>
 </body>
