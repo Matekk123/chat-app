@@ -3,38 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messenger 2.0 - Kérelmekkel</title>
+    <title>Messenger 3.0 - Csoportokkal</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; display: flex; height: 100vh; background: #f0f2f5; }
         
         #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 15px; border-bottom: 1px solid #ddd; background: #fff; }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid #ddd; }
         
-        .section-title { padding: 10px 15px; background: #f8f9fa; font-size: 12px; font-weight: bold; color: #65676b; text-transform: uppercase; }
-        #request-list, #friend-list { flex-shrink: 0; }
-        
-        .item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .section-title { padding: 10px 15px; background: #f8f9fa; font-size: 11px; font-weight: bold; color: #65676b; display: flex; justify-content: space-between; align-items: center; }
+        .item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; }
         .item:hover { background: #f2f2f2; }
-        .active { background: #e7f3ff !important; color: #0084ff; font-weight: bold; }
+        .active { background: #e7f3ff !important; border-left: 4px solid #0084ff; }
 
-        .btn-small { padding: 4px 8px; font-size: 11px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-accept { background: #31a24c; color: white; }
-        .btn-add { background: #0084ff; color: white; width: 100%; margin-top: 5px; padding: 8px; }
+        /* Modal stílus a csoportalkotáshoz */
+        #group-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 10px; width: 300px; }
+        .friend-select-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
 
         #main-chat { flex: 1; display: flex; flex-direction: column; background: white; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; font-weight: bold; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
         
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 70%; font-size: 15px; }
+        .msg { padding: 8px 12px; border-radius: 15px; max-width: 70%; font-size: 14px; }
         .received { background: #e4e6eb; align-self: flex-start; }
         .sent { background: #0084ff; color: white; align-self: flex-end; }
+        .msg small { display: block; font-size: 9px; margin-bottom: 2px; opacity: 0.8; }
 
         .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
-        input { padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; width: 100%; }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        button { cursor: pointer; border: none; border-radius: 5px; }
         
-        #login-screen { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #login-screen { position: fixed; inset: 0; background: white; z-index: 3000; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -42,41 +43,52 @@
     <div id="login-screen">
         <div style="width: 300px; text-align: center;">
             <h1 style="color: #0084ff;">Messenger</h1>
-            <input type="email" id="email" placeholder="Email">
-            <input type="password" id="password" placeholder="Jelszó">
-            <button onclick="login()" style="width: 100%; margin-top: 10px; background: #0084ff; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Belépés</button>
+            <input type="email" id="email" placeholder="Email"><br>
+            <input type="password" id="password" placeholder="Jelszó"><br>
+            <button onclick="login()" style="width: 100%; margin-top: 10px; background: #0084ff; color: white; padding: 10px;">Belépés</button>
             <hr>
-            <input type="text" id="reg-name" placeholder="Teljes neved">
-            <button onclick="register()" style="width: 100%; background: #31a24c; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Regisztráció</button>
+            <input type="text" id="reg-name" placeholder="Teljes név"><br>
+            <button onclick="register()" style="width: 100%; background: #31a24c; color: white; padding: 10px;">Regisztráció</button>
+        </div>
+    </div>
+
+    <div id="group-modal">
+        <div class="modal-box">
+            <h3>Új csoport</h3>
+            <input type="text" id="group-name-input" placeholder="Csoport neve..."><br><br>
+            <div id="modal-friend-list"></div>
+            <br>
+            <button onclick="createGroup()" style="background:#0084ff; color:white; width:100%; padding:10px;">Létrehozás</button>
+            <button onclick="document.getElementById('group-modal').style.display='none'" style="width:100%; margin-top:5px; background:none; color:gray;">Mégse</button>
         </div>
     </div>
 
     <div id="sidebar">
         <div class="sidebar-header">
-            <b id="my-name">Betöltés...</b><br>
-            <input type="text" id="new-friend-email" placeholder="Barát email címe...">
-            <button onclick="sendRequest()" class="btn-add">Barátnek jelölés</button>
+            <b id="my-name">...</b><br>
+            <input type="text" id="new-friend-email" placeholder="Email hozzáadása...">
+            <button onclick="sendRequest()" style="background:#0084ff; color:white; width:100%; margin-top:5px; padding:5px;">Jelölés</button>
         </div>
 
         <div class="section-title">Barátkérelmek</div>
         <div id="request-list"></div>
 
+        <div class="section-title">
+            Csoportok 
+            <button onclick="openGroupModal()" style="font-size:16px; background:none; color:#0084ff; padding:0;">+</button>
+        </div>
+        <div id="group-list"></div>
+
         <div class="section-title">Barátok</div>
         <div id="friend-list"></div>
-
-        <div style="margin-top: auto; padding: 15px;">
-            <button onclick="logout()" style="width: 100%; background: #fa3e3e; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer;">Kijelentkezés</button>
-        </div>
     </div>
 
     <div id="main-chat">
-        <div class="chat-header">
-            <b id="chat-with-title">Válassz valakit...</b>
-        </div>
+        <div class="chat-header" id="chat-title">Válassz egy chatet</div>
         <div id="messages"></div>
         <div class="input-area">
             <input type="text" id="msg-input" placeholder="Üzenet..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button onclick="sendMessage()" style="background: none; color: #0084ff; font-size: 20px;">➡️</button>
+            <button onclick="sendMessage()" style="background:none; color:#0084ff; font-size:20px;">➡️</button>
         </div>
     </div>
 
@@ -97,13 +109,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        let currentUser = null;
-        let activeChatId = null;
+        let currentUser = null, activeChatId = null, myFriends = [];
 
         window.register = async () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('email').value, pass = document.getElementById('password').value, name = document.getElementById('reg-name').value;
             try {
                 const res = await createUserWithEmailAndPassword(auth, email, pass);
                 await updateProfile(res.user, { displayName: name });
@@ -120,78 +129,94 @@
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('my-name').innerText = user.displayName;
-                syncData();
-            } else {
-                document.getElementById('login-screen').style.display = 'flex';
-            }
+                syncSidebar();
+            } else { document.getElementById('login-screen').style.display = 'flex'; }
         });
 
-        // 1. KÉRELEM KÜLDÉSE
         window.sendRequest = async () => {
-            const targetEmail = document.getElementById('new-friend-email').value;
-            if (!targetEmail || targetEmail === currentUser.email) return;
-
-            const targetDoc = await getDoc(doc(db, "users", targetEmail));
-            if (targetDoc.exists()) {
-                await updateDoc(doc(db, "users", targetEmail), {
-                    requests: arrayUnion({ email: currentUser.email, name: currentUser.displayName })
-                });
+            const email = document.getElementById('new-friend-email').value;
+            const snap = await getDoc(doc(db, "users", email));
+            if (snap.exists()) {
+                await updateDoc(doc(db, "users", email), { requests: arrayUnion({ email: currentUser.email, name: currentUser.displayName }) });
                 alert("Kérelem elküldve!");
-                document.getElementById('new-friend-email').value = "";
-            } else { alert("Nincs ilyen felhasználó!"); }
+            } else alert("Nincs ilyen felhasználó.");
         };
 
-        // 2. KÉRELEM ELFOGADÁSA
         window.acceptRequest = async (req) => {
-            // Hozzáadom a barátomhoz
-            await updateDoc(doc(db, "users", currentUser.email), {
-                friends: arrayUnion({ email: req.email, name: req.name }),
-                requests: arrayRemove(req)
-            });
-            // Hozzáadom magam az ő barátaihoz is
-            await updateDoc(doc(db, "users", req.email), {
-                friends: arrayUnion({ email: currentUser.email, name: currentUser.displayName })
-            });
+            await updateDoc(doc(db, "users", currentUser.email), { friends: arrayUnion({ email: req.email, name: req.name }), requests: arrayRemove(req) });
+            await updateDoc(doc(db, "users", req.email), { friends: arrayUnion({ email: currentUser.email, name: currentUser.displayName }) });
         };
 
-        // 3. ADATOK SZINKRONIZÁLÁSA (Barátok + Kérelmek)
-        function syncData() {
-            onSnapshot(doc(db, "users", currentUser.email), (docSnap) => {
-                const data = docSnap.data();
+        // CSOPORT MODAL MEGNYITÁSA
+        window.openGroupModal = () => {
+            const list = document.getElementById('modal-friend-list');
+            list.innerHTML = "";
+            myFriends.forEach(f => {
+                list.innerHTML += `<div class="friend-select-item"><input type="checkbox" value="${f.email}" data-name="${f.name}"> ${f.name}</div>`;
+            });
+            document.getElementById('group-modal').style.display = 'flex';
+        };
+
+        // CSOPORT LÉTREHOZÁSA FIRESTORE-BAN
+        window.createGroup = async () => {
+            const gName = document.getElementById('group-name-input').value;
+            const checked = Array.from(document.querySelectorAll('#modal-friend-list input:checked'));
+            if (!gName || checked.length === 0) return alert("Adj nevet és válassz tagokat!");
+
+            const members = checked.map(c => c.value);
+            members.push(currentUser.email); // Én is tag vagyok
+
+            await addDoc(collection(db, "groups"), {
+                name: gName,
+                members: members,
+                createdAt: Date.now()
+            });
+
+            document.getElementById('group-modal').style.display = 'none';
+            alert("Csoport létrehozva!");
+        };
+
+        function syncSidebar() {
+            // Felhasználói adatok (Barátok + Kérelmek)
+            onSnapshot(doc(db, "users", currentUser.email), (snap) => {
+                const data = snap.data();
+                myFriends = data.friends;
                 
-                // Kérelmek listája
-                const reqList = document.getElementById('request-list');
-                reqList.innerHTML = data.requests.length === 0 ? '<p style="padding:15px; font-size:12px; color:gray;">Nincs új kérelem</p>' : '';
-                data.requests.forEach(req => {
-                    const div = document.createElement('div');
-                    div.className = 'item';
-                    div.innerHTML = `<span>${req.name}</span> <button class="btn-small btn-accept" id="btn-${req.email}">Elfogadás</button>`;
-                    reqList.appendChild(div);
-                    document.getElementById(`btn-${req.email}`).onclick = () => acceptRequest(req);
+                const flist = document.getElementById('friend-list');
+                flist.innerHTML = "";
+                data.friends.forEach(f => {
+                    const d = document.createElement('div');
+                    d.className = 'item'; d.innerText = f.name;
+                    d.onclick = () => openChat([currentUser.email, f.email].sort().join("_"), f.name);
+                    flist.appendChild(d);
                 });
 
-                // Barátok listája
-                const friendList = document.getElementById('friend-list');
-                friendList.innerHTML = "";
-                data.friends.forEach(f => {
-                    const div = document.createElement('div');
-                    div.className = 'item';
-                    div.innerText = f.name;
-                    div.onclick = () => openChat(f);
-                    friendList.appendChild(div);
+                const rlist = document.getElementById('request-list');
+                rlist.innerHTML = "";
+                data.requests.forEach(r => {
+                    rlist.innerHTML += `<div class="item"><span>${r.name}</span><button class="accept-btn" onclick="acceptRequest({email:'${r.email}', name:'${r.name}'})">Ok</button></div>`;
+                });
+            });
+
+            // Csoportok figyelése (ahol tag vagyok)
+            const q = query(collection(db, "groups"), where("members", "array-contains", currentUser.email));
+            onSnapshot(q, (snap) => {
+                const glist = document.getElementById('group-list');
+                glist.innerHTML = "";
+                snap.forEach(docSnap => {
+                    const g = docSnap.data();
+                    const d = document.createElement('div');
+                    d.className = 'item'; d.innerHTML = `👥 ${g.name}`;
+                    d.onclick = () => openChat(docSnap.id, g.name);
+                    glist.appendChild(d);
                 });
             });
         }
 
-        function openChat(friend) {
-            activeChatId = [currentUser.email, friend.email].sort().join("_");
-            document.getElementById('chat-with-title').innerText = friend.name;
-            
-            // Aktív stílus a listában
-            document.querySelectorAll('.item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc"));
+        function openChat(chatId, title) {
+            activeChatId = chatId;
+            document.getElementById('chat-title').innerText = title;
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
             onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('messages');
                 container.innerHTML = "";
@@ -199,7 +224,7 @@
                     const m = d.data();
                     const div = document.createElement('div');
                     div.className = `msg ${m.sender === currentUser.email ? 'sent' : 'received'}`;
-                    div.innerText = m.text;
+                    div.innerHTML = `<small>${m.senderName}</small>${m.text}`;
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
@@ -212,6 +237,7 @@
             await addDoc(collection(db, "chats", activeChatId, "messages"), {
                 text: input.value,
                 sender: currentUser.email,
+                senderName: currentUser.displayName,
                 time: Date.now()
             });
             input.value = "";
